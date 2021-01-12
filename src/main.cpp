@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "Adafruit_MCP23017.h"
+#include <LiquidCrystal_I2C.h>
 
 const uint8_t pin_led = LED_BUILTIN;
 const uint8_t pin_int = 2;
@@ -12,11 +13,23 @@ const uint8_t board_size = mcp_num * mcp_gpios + 1;
 char lastBoard[board_size];
 
 Adafruit_MCP23017 mcp[mcp_num];
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 volatile bool awakenByInterrupt = false;
 
 void callback() {
   awakenByInterrupt = true;
+}
+
+void lcdInit() {
+  lcd.init();
+  lcd.backlight();
+}
+
+void lcdStatus(const char *msg) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(msg);
 }
 
 bool readBoard(char *board) {
@@ -37,9 +50,11 @@ bool readBoard(char *board) {
 }
 
 void printBoard(char *board) {
-  Serial.print(board[0]);
-  Serial.print(board[mcp_gpios]);
-  Serial.println();
+  char msg[3];
+  msg[0] = board[0];
+  msg[1] = board[mcp_gpios];
+  msg[2] = '\0';
+  lcdStatus(msg);
 }
 
 void clearMCPInterrupt() {
@@ -55,6 +70,10 @@ void clearMCUInterrupt() {
 
 void setup() {
   Serial.begin(9600);
+
+  lcdInit();
+
+  lcdStatus("Initializing...");
 
   pinMode(pin_led, OUTPUT);
   pinMode(pin_int, INPUT);
@@ -73,19 +92,16 @@ void setup() {
   printBoard(lastBoard);
 }
 
-void loop() {
+void waitForInterrupt() {
   attachInterrupt(digitalPinToInterrupt(pin_int), callback, RISING);
-
   clearMCPInterrupt();
-
-  Serial.print("...");
-  while (!awakenByInterrupt);
-  Serial.println();
-
+  while (!awakenByInterrupt); // TODO: low energy sleep instead
   detachInterrupt(digitalPinToInterrupt(pin_int));
-
   clearMCUInterrupt();
+}
 
+void loop() {
+  waitForInterrupt();
   if (readBoard(lastBoard)) {
     printBoard(lastBoard);
   }
