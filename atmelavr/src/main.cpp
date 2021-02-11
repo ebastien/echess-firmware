@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include "Adafruit_MCP23017.h"
-#include <LiquidCrystal_I2C.h>
+#include <Adafruit_MCP23017.h>
+// #include <LiquidCrystal_I2C.h>
 
-const uint8_t pin_led = LED_BUILTIN;
-const uint8_t pin_int = 2;
-const uint8_t pin_button = 0;
+const uint8_t gpio_led = LED_BUILTIN;
+const uint8_t gpio_int = 2;
+const uint8_t mcp_gpio_switch = 0;
 const uint8_t mcp_num = 2;
 const uint8_t mcp_gpios = 16;
 const uint8_t board_size = mcp_num * mcp_gpios + 1;
@@ -13,7 +13,7 @@ const uint8_t board_size = mcp_num * mcp_gpios + 1;
 char lastBoard[board_size];
 
 Adafruit_MCP23017 mcp[mcp_num];
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+// LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 volatile bool awakenByInterrupt = false;
 
@@ -22,14 +22,15 @@ void callback() {
 }
 
 void lcdInit() {
-  lcd.init();
-  lcd.backlight();
+  // lcd.init();
+  // lcd.backlight();
 }
 
 void lcdStatus(const char *msg) {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(msg);
+  // lcd.clear();
+  // lcd.setCursor(0, 0);
+  // lcd.print(msg);
+  Serial.println(msg);
 }
 
 bool readBoard(char *board) {
@@ -75,28 +76,28 @@ void setup() {
 
   lcdStatus("Initializing...");
 
-  pinMode(pin_led, OUTPUT);
-  pinMode(pin_int, INPUT);
+  pinMode(gpio_led, OUTPUT);
+  pinMode(gpio_int, INPUT);
 
   for (uint8_t n = 0; n < mcp_num; n++) {
     mcp[n].begin(n);
-    mcp[n].setupInterrupts(true, false, LOW);
-    mcp[n].pinMode(pin_button, INPUT);
-    mcp[n].pullUp(pin_button, HIGH);
-    mcp[n].setupInterruptPin(pin_button, CHANGE);
+    mcp[n].setupInterrupts(true, false, HIGH);
+    mcp[n].pinMode(mcp_gpio_switch, INPUT);
+    mcp[n].pullUp(mcp_gpio_switch, HIGH);
+    mcp[n].setupInterruptPin(mcp_gpio_switch, CHANGE);
   }
 
-  digitalWrite(pin_led, LOW);
+  digitalWrite(gpio_led, LOW);
 
   readBoard(lastBoard);
   printBoard(lastBoard);
 }
 
 void waitForInterrupt() {
-  attachInterrupt(digitalPinToInterrupt(pin_int), callback, RISING);
+  attachInterrupt(digitalPinToInterrupt(gpio_int), callback, RISING);
   clearMCPInterrupt();
   while (!awakenByInterrupt); // TODO: low energy sleep instead
-  detachInterrupt(digitalPinToInterrupt(pin_int));
+  detachInterrupt(digitalPinToInterrupt(gpio_int));
   clearMCUInterrupt();
 }
 
