@@ -3,24 +3,25 @@
 #include <Adafruit_MCP23017.h>
 #include <U8g2lib.h>
 
-const uint8_t gpio_sda = 21;
-const uint8_t gpio_scl = 22;
-const uint8_t gpio_led = 32;
-const uint8_t gpio_int = 33;
-const uint8_t mcp_gpio_switch = 0;
-const uint8_t mcp_num = 5;
-const uint8_t mcp_gpios = 16;
-const uint8_t board_size = mcp_num * mcp_gpios + 1;
+const uint8_t gpioSDA = 21;
+const uint8_t gpioSCL = 22;
+const uint8_t gpioLED = 32;
+const uint8_t gpioInterrupt = 33;
+const uint8_t mcpSquaresUnits = 4;
+const uint8_t mcpGPIOs = 16;
+const uint8_t axisSquares = 8;
+const uint8_t boardSize = axisSquares * axisSquares;
 
-char lastBoard[board_size];
+uint8_t lastBoard[boardSize];
 
-Adafruit_MCP23017 mcp[mcp_num];
+Adafruit_MCP23017 mcpSquares[mcpSquaresUnits];
+Adafruit_MCP23017 mcpLEDs;
 
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 volatile bool awakenByInterrupt = false;
 
-void callback() {
+void interruptCallback() {
   awakenByInterrupt = true;
 }
 
@@ -30,51 +31,59 @@ void lcdInit() {
   u8g2.sendBuffer();
 }
 
-void lcdStatus(const char *msg) {
+void lcdPrint(const char *msg) {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_ncenB08_tr);
   u8g2.drawStr(0, 10, msg);
   u8g2.sendBuffer();
 }
 
-bool readBoard(char *board) {
-  bool has_changed = false;
-  for (uint8_t n = 0; n < mcp_num; n++) {
-    for (uint8_t p = 0; p < mcp_gpios; p++) {
-      uint8_t b = mcp[n].digitalRead(p);
-      char new_square = b ? '_' : 'X';
-      char *square = &board[n * mcp_gpios + p];
-      if (new_square != *square) {
-        has_changed = true;
-        *square = new_square;
+bool readBoard(uint8_t *board) {
+  bool hasChanged = false;
+  for (uint8_t n = 0; n < mcpSquaresUnits; n++) {
+    const uint16_t gpios = mcpSquares[n].readGPIOAB();
+    for (uint8_t p = 0; p < mcpGPIOs; p++) {
+      uint8_t newSquare = gpios & (1 << p) ? 0 : 1;
+      uint8_t *lastSquare = board + n * mcpGPIOs + p;
+      if (newSquare != *lastSquare) {
+        hasChanged = true;
+        *lastSquare = newSquare;
       }
     }
   }
-  board[board_size-1] = '\0';
-  return has_changed;
+  return hasChanged;
 }
 
-void printBoard(char *board) {
-  char msg[3];
-  msg[0] = board[0];
-  msg[1] = board[mcp_gpios];
-  msg[2] = '\0';
-  lcdStatus(msg);
-}
+void printBoard(uint8_t *board) {
 
-void clearMCPInterrupt() {
-  for (uint8_t n = 0; n < mcp_num; n++) {
-    mcp[n].getLastInterruptPinValue();
+  const u8g2_uint_t squareDim = 8;
+  const u8g2_uint_t boardDim = axisSquares * squareDim;
+
+  u8g2.clearBuffer();
+
+  for (uint8_t y = 0; y < axisSquares; y++) {
+    for (uint8_t x = 0; x < axisSquares; x++) {
+      const u8g2_uint_t xs = x * squareDim;
+      const u8g2_uint_t ys = boardDim - (y + 1) * squareDim;
+      const uint8_t bgColor = (x + y) % 2;
+      const uint8_t fgColor = (bgColor + 1) % 2;
+      const uint8_t square = board[y * axisSquares + x];
+
+      u8g2.setDrawColor(bgColor);
+      u8g2.drawBox(xs, ys, squareDim, squareDim);
+      if (square == 1) {
+        u8g2.setDrawColor(fgColor);
+        u8g2.drawDisc(xs + squareDim/2, ys + squareDim/2, squareDim/4);
+      }
+    }
   }
-}
 
-void clearMCUInterrupt() {
-  awakenByInterrupt = false;
+  u8g2.sendBuffer();
 }
 
 void i2cInit()
 {
-  Wire.begin(gpio_sda, gpio_scl);
+  Wire.begin(gpioSDA, gpioSCL);
 
   Serial.println();
   Serial.println("I2C scanner. Scanning ...");
@@ -99,16 +108,21 @@ void i2cInit()
 }
 
 void mcpInit() {
-  pinMode(gpio_int, INPUT);
-  for (uint8_t n = 0; n < mcp_num; n++) {
-    mcp[n].begin(n);
-    mcp[n].setupInterrupts(true, false, HIGH);
-    for (uint8_t p = 0; p < mcp_gpios; p++) {
-      mcp[n].pinMode(p, INPUT);
-      mcp[n].pullUp(p, HIGH);
-      mcp[n].setupInterruptPin(p, CHANGE);
+  pinMode(gpioInterrupt, INPUT);
+  for (uint8_t n = 0; n < mcpSquaresUnits; n++) {
+    mcpSquares[n].begin(n);
+    mcpSquares[n].setupInterrupts(true, false, HIGH);
+    for (uint8_t p = 0; p < mcpGPIOs; p++) {
+      mcpSquares[n].pinMode(p, INPUT);
+      mcpSquares[n].pullUp(p, HIGH);
+      mcpSquares[n].setupInterruptPin(p, CHANGE);
     }
   }
+  mcpLEDs.begin(mcpSquaresUnits);
+  for (uint8_t p = 0; p < mcpGPIOs; p++) {
+    mcpLEDs.pinMode(p, OUTPUT);
+  }
+  mcpLEDs.writeGPIOAB(0);
 }
 
 void setup() {
@@ -117,27 +131,38 @@ void setup() {
   lcdInit();
   mcpInit();
 
-  pinMode(gpio_led, OUTPUT);
-  digitalWrite(gpio_led, LOW);
+  pinMode(gpioLED, OUTPUT);
+  digitalWrite(gpioLED, LOW);
 
-  lcdStatus("Initialized");
+  lcdPrint("Initialized");
 
   readBoard(lastBoard);
   printBoard(lastBoard);
+
+  attachInterrupt(digitalPinToInterrupt(gpioInterrupt), interruptCallback, RISING);
 }
 
 void waitForInterrupt() {
-  attachInterrupt(digitalPinToInterrupt(gpio_int), callback, RISING);
-  clearMCPInterrupt();
-  while (!awakenByInterrupt); // TODO: low energy sleep instead
-  detachInterrupt(digitalPinToInterrupt(gpio_int));
-  clearMCUInterrupt();
+  for (uint8_t n = 0; n < mcpSquaresUnits; n++) {
+    mcpSquares[n].getLastInterruptPinValue();
+  }
+  while (!awakenByInterrupt);
 }
 
 void loop() {
+  Serial.println("waiting for interrupt...");
   waitForInterrupt();
-  Serial.println("interrup!");
-  if (readBoard(lastBoard)) {
-    printBoard(lastBoard);
+  Serial.println("interrupt!");
+
+  const unsigned long clearance = 500000; // 500ms
+  unsigned long lastChange = micros();
+  while (micros() - lastChange < clearance) {
+    if (readBoard(lastBoard)) {
+      lastChange = micros();
+    }
   }
+
+  awakenByInterrupt = false;
+
+  printBoard(lastBoard);
 }
