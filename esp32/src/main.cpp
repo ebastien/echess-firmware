@@ -32,13 +32,25 @@ void loop() {
   auto& scanner = Scanner::getInstance();
   auto& buzzer = Buzzer::getInstance();
 
+  Footprint fp(lastFootprint);
+
   scanner.waitForInterrupt();
-  scanner.debounce(lastFootprint);
+  scanner.debounce(fp);
   scanner.clearInterrupt();
+
+  display.prepare();
 
   // TODO: process the move
 
-  display.prepare();
+  auto ds(lastFootprint.compare(fp));
+  for (auto i = ds.begin(); i != ds.end(); ++i) {
+    char msg[32];
+    snprintf(msg, sizeof(msg), "%d %d %s", i->x(), i->y(), i->dir() == Direction::placed ? "P" : "R");
+    display.print(msg);
+  }
+
+  lastFootprint = fp;
+
   display.print(dial.count());
   display.print(lastFootprint);
   display.draw();

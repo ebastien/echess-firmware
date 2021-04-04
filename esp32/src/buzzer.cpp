@@ -5,7 +5,7 @@ Buzzer::Buzzer() {
   ledcSetup(chanBuzzer, 440, 8);
 }
 
-void Buzzer::beep() {
+void Buzzer::beep() const {
   ledcWriteTone(chanBuzzer, 440);
   ledcAttachPin(gpioBuzzer, chanBuzzer);
   delay(100);

@@ -1,3 +1,6 @@
+#ifndef _ECHESS_BUZZER_H
+#define _ECHESS_BUZZER_H
+
 #include <Arduino.h>
 
 class Buzzer {
@@ -15,5 +18,7 @@ public:
     return instance;
   }
 
-  void beep();
+  void beep() const;
 };
+
+#endif

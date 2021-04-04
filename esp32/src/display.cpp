@@ -1,13 +1,14 @@
 #include "display.h"
 #include "footprint.h"
 
-Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE) {
+Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE), row(0) {
   u8g2.begin();
   u8g2.clearBuffer();
   u8g2.sendBuffer();
 }
 
 void Display::prepare() {
+  row = 0;
   u8g2.clearBuffer();
 }
 
@@ -18,8 +19,9 @@ void Display::draw() {
 void Display::print(const char *msg) {
   u8g2.setFontMode(0);
   u8g2.setFont(u8g2_font_u8glib_4_hr);
-  u8g2.setCursor(65, 10);
+  u8g2.setCursor(65, 10 + row * 5);
   u8g2.print(msg);
+  row++;
 }
 
 void Display::print(const int32_t n) {
