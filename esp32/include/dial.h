@@ -3,6 +3,8 @@
 
 #include <ESP32Encoder.h>
 
+namespace echess {
+
 class Dial {
   static const uint8_t gpioRotButton = 27;
   static const uint8_t gpioRotA = 25;
@@ -23,5 +25,7 @@ public:
 
   int32_t count();
 };
+
+}
 
 #endif

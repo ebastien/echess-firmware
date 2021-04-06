@@ -1,6 +1,6 @@
 #include "footprint.h"
 
-using namespace std;
+using namespace echess;
 
 const uint8_t Scanner::c_mcpUnitLayout[c_mcpSquaresUnits] = {1, 0, 3, 2};
 
@@ -41,10 +41,10 @@ bool Scanner::read(Footprint& f) {
   for (uint8_t n = 0; n < c_mcpSquaresUnits; n++) {
     const uint16_t gpios = s_mcps[n].readGPIOAB();
     for (uint8_t p = 0; p < c_mcpGPIOs; p++) {
-      const uint8_t idx = c_mcpUnitLayout[n] * c_mcpGPIOs + p;
+      auto pos = Topo::position(c_mcpUnitLayout[n] * c_mcpGPIOs + p);
       bool square = ! (gpios & (1 << p));
-      if (f.fp_[idx] != square) {
-        f.fp_[idx] = square;
+      if (f.at(pos) != square) {
+        f.at(pos) = square;
         changed = true;
       }
     }
@@ -59,27 +59,4 @@ void Scanner::debounce(Footprint& f) {
       lastChange = micros();
     }
   }
-}
-
-Footprint::Footprint() {
-  for (uint8_t n = 0; n < c_boardSize; n++) {
-    fp_[n] = false;
-  }
-}
-
-vector<Change> Footprint::compare(const Footprint& fp) const {
-  vector<Change> v;
-  for (uint8_t y = 0; y < c_axisSquares; y++) {
-    for (uint8_t x = 0; x < c_axisSquares; x++) {
-      switch (fp.at(x, y) - at(x, y)) {
-        case 1:
-          v.push_back(Change(x, y, Direction::placed));
-          break;
-        case -1:
-          v.push_back(Change(x, y, Direction::removed));
-          break;
-      }
-    }
-  }
-  return v;
 }

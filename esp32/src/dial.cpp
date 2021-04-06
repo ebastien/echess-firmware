@@ -1,5 +1,7 @@
 #include "dial.h"
 
+using namespace echess;
+
 Dial::Dial() {
   pinMode(gpioRotButton, INPUT_PULLUP);
   ESP32Encoder::useInternalWeakPullResistors = UP;

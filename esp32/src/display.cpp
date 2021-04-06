@@ -1,6 +1,8 @@
 #include "display.h"
 #include "footprint.h"
 
+using namespace echess;
+
 Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE), row(0) {
   u8g2.begin();
   u8g2.clearBuffer();
@@ -17,6 +19,7 @@ void Display::draw() {
 }
 
 void Display::print(const char *msg) {
+  u8g2.setDrawColor(1);
   u8g2.setFontMode(0);
   u8g2.setFont(u8g2_font_u8glib_4_hr);
   u8g2.setCursor(65, 10 + row * 5);
@@ -31,25 +34,21 @@ void Display::print(const int32_t n) {
 }
 
 void Display::print(const Footprint& board) {
-
-  const uint8_t axisSquares = Footprint::c_axisSquares;
   const u8g2_uint_t squareDim = 8;
-  const u8g2_uint_t boardDim = axisSquares * squareDim;
+  const u8g2_uint_t boardDim = Topo::c_axisSquares * squareDim;
 
-  for (uint8_t y = 0; y < axisSquares; y++) {
-    for (uint8_t x = 0; x < axisSquares; x++) {
-      const u8g2_uint_t xs = x * squareDim;
-      const u8g2_uint_t ys = boardDim - (y + 1) * squareDim;
-      const uint8_t bgColor = (x + y) % 2;
-      const uint8_t fgColor = (bgColor + 1) % 2;
-      const bool square = board.at(x, y);
+  for (auto p : Topo()) {
+    const u8g2_uint_t xs = p.x() * squareDim;
+    const u8g2_uint_t ys = boardDim - (p.y() + 1) * squareDim;
+    const uint8_t bgColor = (p.x() + p.y()) % 2;
+    const uint8_t fgColor = (bgColor + 1) % 2;
+    const bool square = board.at(p);
 
-      u8g2.setDrawColor(bgColor);
-      u8g2.drawBox(xs, ys, squareDim, squareDim);
-      if (square) {
-        u8g2.setDrawColor(fgColor);
-        u8g2.drawDisc(xs + squareDim/2, ys + squareDim/2, squareDim/4);
-      }
+    u8g2.setDrawColor(bgColor);
+    u8g2.drawBox(xs, ys, squareDim, squareDim);
+    if (square) {
+      u8g2.setDrawColor(fgColor);
+      u8g2.drawDisc(xs + squareDim/2, ys + squareDim/2, squareDim/4);
     }
   }
 }

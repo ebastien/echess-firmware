@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+namespace echess {
+
 class Buzzer {
   static const uint8_t gpioBuzzer = 32;
   static const uint8_t chanBuzzer = 0;
@@ -20,5 +22,7 @@ public:
 
   void beep() const;
 };
+
+}
 
 #endif

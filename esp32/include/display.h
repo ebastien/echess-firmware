@@ -4,6 +4,8 @@
 #include <U8g2lib.h>
 #include "footprint.h"
 
+namespace echess {
+
 class Display {
   U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2;
   uint8_t row;
@@ -25,5 +27,7 @@ public:
   void print(const int32_t n);
   void print(const Footprint& board);
 };
+
+}
 
 #endif

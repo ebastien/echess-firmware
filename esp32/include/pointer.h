@@ -3,6 +3,8 @@
 
 #include <Adafruit_MCP23017.h>
 
+namespace echess {
+
 class Pointer {
   static const uint8_t c_mcpAddress = 4;
   static const uint8_t c_mcpGPIOs = 16;
@@ -20,5 +22,7 @@ public:
     return instance;
   }
 };
+
+}
 
 #endif

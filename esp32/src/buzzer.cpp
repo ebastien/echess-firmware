@@ -1,5 +1,7 @@
 #include "buzzer.h"
 
+using namespace echess;
+
 Buzzer::Buzzer() {
   pinMode(gpioBuzzer, OUTPUT);
   ledcSetup(chanBuzzer, 440, 8);
