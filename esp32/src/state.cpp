@@ -8,23 +8,50 @@ void Machine::transition(const Change& c) {
     [&](const StateInvalid&) {},
     [&](const StateWaiting&) {
       if (c.dir() == Direction::removed) {
-        // auto piece = board_.at(c.x(), c.y());
-        state_ = StateMoving();
+        if (board_[c.pos()] == Piece::none) {
+          state_ = StateInvalid();
+        } else {
+          state_ = StateMoving(c.pos());
+        }
       } else {
         state_ = StateInvalid();
       }
     },
-    [&](const StateMoving&) {
+    [&](const StateMoving& s) {
       if (c.dir() == Direction::placed) {
-        state_ = StateWaiting();
+        if (board_[c.pos()] != Piece::none) {
+          state_ = StateInvalid();
+        } else {
+          if (board_.move(s.origin(), c.pos())) {
+            state_ = StateWaiting();
+          } else {
+            state_ = StateInvalid();
+          }
+        }
       } else {
-        state_ = StateTaking();
+        if (board_[c.pos()] == Piece::none) {
+          state_ = StateInvalid();
+        } else {
+          if (board_.isValidMove(s.origin(), c.pos())) {
+            state_ = StateTaking(s.origin(), c.pos());
+          } else {
+            state_ = StateInvalid();
+          }
+        }
       }
     },
     [&](const StateCastling&) {},
-    [&](const StateTaking&) {
+    [&](const StateTaking& s) {
       if (c.dir() == Direction::placed) {
-        state_ = StateWaiting();
+        if (c.pos() == s.to()) {
+          if (board_.move(s.from(), s.to())) {
+            state_ = StateWaiting();
+          } else {
+            state_ = StateInvalid();
+          }
+        } else {
+          state_ = StateInvalid();
+        }
       } else {
         state_ = StateInvalid();
       }

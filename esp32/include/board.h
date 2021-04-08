@@ -24,11 +24,14 @@ namespace echess {
   public:
     Board() {}
 
-    Piece& operator[](const Position& p) { return b_[Topo::index(p)]; }
     Piece operator[](const Position& p) const { return b_[Topo::index(p)]; }
+    Piece& operator[](const Position& p) { return b_[Topo::index(p)]; }
 
-    Array::iterator begin() { return b_.begin(); }
-    Array::iterator end()   { return b_.end(); }
+    bool isValidMove(const Position& from, const Position& to) const;
+    bool move(const Position& from, const Position& to);
+
+    Array::const_iterator cbegin() const { return b_.cbegin(); }
+    Array::const_iterator cend()   const { return b_.cend(); }
   };
 
 }

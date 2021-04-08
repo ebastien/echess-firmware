@@ -15,8 +15,12 @@ namespace echess {
   };
 
   class StateMoving {
+    Position origin_;
+
   public:
-    StateMoving() {}
+    StateMoving(const Position& o) : origin_(o) {}
+
+    const Position& origin() const { return origin_; }
   };
 
   class StateCastling {
@@ -25,8 +29,13 @@ namespace echess {
   };
 
   class StateTaking {
+    Position from_, to_;
+
   public:
-    StateTaking() {}
+    StateTaking(const Position& from, const Position& to) : from_(from), to_(to) {}
+
+    const Position& from() const { return from_; }
+    const Position& to() const { return to_; }
   };
 
   class StateInvalid {
@@ -52,6 +61,7 @@ namespace echess {
     void transition(const UIInput&);
 
     const Board& board() const { return board_; }
+    Board& board() { return board_; }
     const char* explain() const;
   };
 

@@ -41,7 +41,11 @@ namespace echess {
     scanner_(Scanner::getInstance()),
     pointer_(Pointer::getInstance()),
     dial_(Dial::getInstance()),
-    buzzer_(Buzzer::getInstance()) {}
+    buzzer_(Buzzer::getInstance()) {
+
+    m_.board()[Position("a2")] = Piece::pawn;
+    m_.board()[Position("c2")] = Piece::pawn;
+  }
 
   void Main::setup() {
     Serial.begin(9600);
@@ -76,7 +80,8 @@ namespace echess {
     fp_ = fp;
 
     display_.print(m_.explain());
-    display_.print(fp_);
+    // display_.print(fp_);
+    display_.print(m_.board());
     display_.draw();
 
     buzzer_.beep();

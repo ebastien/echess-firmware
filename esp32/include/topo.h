@@ -11,6 +11,10 @@ namespace echess {
 
   public:
     Position(uint8_t x, uint8_t y) : x_(x), y_(y) {}
+    Position(const char* n) : x_(n[0] - 'a'), y_(n[1] - '1') {} 
+
+    friend bool operator==(const Position& a, const Position& b) { return a.x_ == b.x_ && a.y_ == b.y_; }
+    friend bool operator!=(const Position& a, const Position& b) { return a.x_ != b.x_ || a.y_ != b.y_; }
 
     uint8_t x() const { return x_; }
     uint8_t y() const { return y_; }

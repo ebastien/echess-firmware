@@ -3,6 +3,7 @@
 
 #include <U8g2lib.h>
 #include "footprint.h"
+#include "board.h"
 
 namespace echess {
 
@@ -26,6 +27,7 @@ namespace echess {
     void print(const char *msg);
     void print(const int32_t n);
     void print(const Footprint& board);
+    void print(const Board& board);
   };
 
 }
