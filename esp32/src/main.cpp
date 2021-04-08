@@ -10,80 +10,77 @@
 
 namespace echess {
 
-class Main {
-  Footprint fp_;
-  Machine m_;
+  class Main {
+    Footprint fp_;
+    Machine m_;
 
-  Display& display_;
-  Scanner& scanner_;
-  Pointer& pointer_;
-  Dial& dial_;
-  Buzzer& buzzer_;
+    Display& display_;
+    Scanner& scanner_;
+    Pointer& pointer_;
+    Dial& dial_;
+    Buzzer& buzzer_;
 
-  Main();
+    Main();
 
-public:
-  Main(const Main&) = delete;
-  Main& operator=(const Main&) = delete;
+  public:
+    Main(const Main&) = delete;
+    Main& operator=(const Main&) = delete;
 
-  static Main& getInstance() {
-    static Main instance;
-    return instance;
+    static Main& getInstance() {
+      static Main instance;
+      return instance;
+    }
+
+    void setup();
+    void loop();
+  };
+
+  Main::Main() :
+    m_(Board()),
+    display_(Display::getInstance()),
+    scanner_(Scanner::getInstance()),
+    pointer_(Pointer::getInstance()),
+    dial_(Dial::getInstance()),
+    buzzer_(Buzzer::getInstance()) {}
+
+  void Main::setup() {
+    Serial.begin(9600);
+
+    scanner_.read(fp_);
+    display_.prepare();
+    display_.print(m_.explain());
+    display_.print(fp_);
+    display_.draw();
+    buzzer_.beep();
   }
 
-  Footprint& footprint() { return fp_; }
-  Machine& machine() { return m_; }
+  void Main::loop() {
+    Footprint fp(fp_);
 
-  void setup();
-  void loop();
-};
+    scanner_.waitForInterrupt();
+    scanner_.debounce(fp);
+    scanner_.clearInterrupt();
 
-Main::Main() :
-  m_(Board()),
-  display_(Display::getInstance()),
-  scanner_(Scanner::getInstance()),
-  pointer_(Pointer::getInstance()),
-  dial_(Dial::getInstance()),
-  buzzer_(Buzzer::getInstance()) {}
+    display_.prepare();
 
-void Main::setup() {
-  Serial.begin(9600);
+    auto ds = compare(fp_, fp);
 
-  scanner_.read(fp_);
-  display_.prepare();
-  display_.print(m_.explain());
-  display_.print(fp_);
-  display_.draw();
-  buzzer_.beep();
-}
+    m_.transition(ds);
 
-void Main::loop() {
-  Footprint fp(fp_);
+    for (const auto& i : ds) {
+      char msg[32];
+      snprintf(msg, sizeof(msg), "%d %d %s", i.pos().x(), i.pos().y(), i.dir() == Direction::placed ? "P" : "R");
+      display_.print(msg);
+    }
 
-  scanner_.waitForInterrupt();
-  scanner_.debounce(fp);
-  scanner_.clearInterrupt();
+    fp_ = fp;
 
-  display_.prepare();
+    display_.print(m_.explain());
+    display_.print(fp_);
+    display_.draw();
 
-  auto ds = compare(fp_, fp);
-
-  m_.transition(ds);
-
-  for (auto i = ds.begin(); i != ds.end(); ++i) {
-    char msg[32];
-    snprintf(msg, sizeof(msg), "%d %d %s", i->x(), i->y(), i->dir() == Direction::placed ? "P" : "R");
-    display_.print(msg);
+    buzzer_.beep();
   }
-
-  fp_ = fp;
-
-  display_.print(m_.explain());
-  display_.print(fp_);
-  display_.draw();
-
-  buzzer_.beep();
-}
 
 }
 

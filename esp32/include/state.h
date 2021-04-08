@@ -9,50 +9,51 @@
 
 namespace echess {
 
-class StateWaiting {
-public:
-  StateWaiting() {}
-};
+  class StateWaiting {
+  public:
+    StateWaiting() {}
+  };
 
-class StateMoving {
-public:
-  StateMoving() {}
-};
+  class StateMoving {
+  public:
+    StateMoving() {}
+  };
 
-class StateCastling {
-public:
-  StateCastling() {}
-};
+  class StateCastling {
+  public:
+    StateCastling() {}
+  };
 
-class StateTaking {
-public:
-  StateTaking() {}
-};
+  class StateTaking {
+  public:
+    StateTaking() {}
+  };
 
-class StateInvalid {
-public:
-  StateInvalid() {}
-};
+  class StateInvalid {
+  public:
+    StateInvalid() {}
+  };
 
-class Machine {
-  typedef std::variant<StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking> State;
-  typedef std::vector<Change> BoardInput;
-  struct UIInput {};
+  class Machine {
+    using State = std::variant<StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking>;
 
-  State state_;
-  Board board_;
+    State state_;
+    Board board_;
 
-  void transition(const Change&);
+    void transition(const Change&);
 
-public:
-  Machine(const Board& b) : state_(StateWaiting()), board_(b) {};
+  public:
+    using BoardInput = std::vector<Change>;
+    using UIInput = struct {};
 
-  void transition(const BoardInput&);
-  void transition(const UIInput&);
+    Machine(const Board& b) : state_(StateWaiting()), board_(b) {};
 
-  const Board& board() const { return board_; }
-  const char* explain() const;
-};
+    void transition(const BoardInput&);
+    void transition(const UIInput&);
+
+    const Board& board() const { return board_; }
+    const char* explain() const;
+  };
 
 }
 

@@ -42,7 +42,7 @@ void Display::print(const Footprint& board) {
     const u8g2_uint_t ys = boardDim - (p.y() + 1) * squareDim;
     const uint8_t bgColor = (p.x() + p.y()) % 2;
     const uint8_t fgColor = (bgColor + 1) % 2;
-    const bool square = board.at(p);
+    const bool square = board[p];
 
     u8g2.setDrawColor(bgColor);
     u8g2.drawBox(xs, ys, squareDim, squareDim);

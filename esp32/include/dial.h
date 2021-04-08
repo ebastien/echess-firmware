@@ -5,26 +5,26 @@
 
 namespace echess {
 
-class Dial {
-  static const uint8_t gpioRotButton = 27;
-  static const uint8_t gpioRotA = 25;
-  static const uint8_t gpioRotB = 26;
+  class Dial {
+    static const uint8_t gpioRotButton = 27;
+    static const uint8_t gpioRotA = 25;
+    static const uint8_t gpioRotB = 26;
 
-  ESP32Encoder encoder;
+    ESP32Encoder encoder;
 
-  Dial();
- 
-public:
-  Dial(const Dial&) = delete;
-  Dial& operator=(const Dial&) = delete;
+    Dial();
 
-  static Dial& getInstance() {
-    static Dial instance;
-    return instance;
-  }
+  public:
+    Dial(const Dial&) = delete;
+    Dial& operator=(const Dial&) = delete;
 
-  int32_t count();
-};
+    static Dial& getInstance() {
+      static Dial instance;
+      return instance;
+    }
+
+    int32_t count();
+  };
 
 }
 

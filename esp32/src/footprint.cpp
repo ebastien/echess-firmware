@@ -43,8 +43,8 @@ bool Scanner::read(Footprint& f) {
     for (uint8_t p = 0; p < c_mcpGPIOs; p++) {
       auto pos = Topo::position(c_mcpUnitLayout[n] * c_mcpGPIOs + p);
       bool square = ! (gpios & (1 << p));
-      if (f.at(pos) != square) {
-        f.at(pos) = square;
+      if (f[pos] != square) {
+        f[pos] = square;
         changed = true;
       }
     }

@@ -5,23 +5,23 @@
 
 namespace echess {
 
-class Pointer {
-  static const uint8_t c_mcpAddress = 4;
-  static const uint8_t c_mcpGPIOs = 16;
+  class Pointer {
+    static const uint8_t c_mcpAddress = 4;
+    static const uint8_t c_mcpGPIOs = 16;
 
-  Adafruit_MCP23017 s_mcp;
+    Adafruit_MCP23017 s_mcp;
 
-  Pointer();
+    Pointer();
 
-public:
-  Pointer(const Pointer&) = delete;
-  Pointer& operator=(const Pointer&) = delete;
+  public:
+    Pointer(const Pointer&) = delete;
+    Pointer& operator=(const Pointer&) = delete;
 
-  static Pointer& getInstance() {
-    static Pointer instance;
-    return instance;
-  }
-};
+    static Pointer& getInstance() {
+      static Pointer instance;
+      return instance;
+    }
+  };
 
 }
 
