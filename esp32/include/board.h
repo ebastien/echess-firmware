@@ -4,6 +4,7 @@
 #include <array>
 
 #include "topo.h"
+#include "footprint.h"
 
 namespace echess {
 
@@ -28,10 +29,11 @@ namespace echess {
     Piece& operator[](const Position& p) { return b_[Topo::index(p)]; }
 
     bool isValidMove(const Position& from, const Position& to) const;
+    bool isCastling(const Position& from, const Position& to) const;
     bool move(const Position& from, const Position& to);
 
-    Array::const_iterator cbegin() const { return b_.cbegin(); }
-    Array::const_iterator cend()   const { return b_.cend(); }
+    Array::const_iterator begin() const { return b_.begin(); }
+    Array::const_iterator end()   const { return b_.end(); }
   };
 
 }

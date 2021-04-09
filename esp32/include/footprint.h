@@ -47,8 +47,8 @@ namespace echess {
       return cs;
     }
 
-    Array::iterator begin() { return fp_.begin(); }
-    Array::iterator end()   { return fp_.end(); }
+    Array::const_iterator begin() { return fp_.begin(); }
+    Array::const_iterator end()   { return fp_.end(); }
   };
 
   class Scanner {

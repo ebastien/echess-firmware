@@ -3,9 +3,30 @@
 
 using namespace echess;
 
+void Machine::reset(const Board& b) {
+  state_ = StateWaiting();
+  board_ = b;
+  for (const auto p : Topo()) {
+    footprint_[p] = (board_[p] != Piece::none);
+  }
+}
+
+bool Machine::isValid() const {
+  for (const auto p : Topo()) {
+    if (footprint_[p] != (board_[p] != Piece::none)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void Machine::transition(const Change& c) {
   std::visit(visitor {
-    [&](const StateInvalid&) {},
+    [&](const StateInvalid&) {
+      if (isValid()) {
+        state_ = StateWaiting();
+      }
+    },
     [&](const StateWaiting&) {
       if (c.dir() == Direction::removed) {
         if (board_[c.pos()] == Piece::none) {
@@ -22,10 +43,14 @@ void Machine::transition(const Change& c) {
         if (board_[c.pos()] != Piece::none) {
           state_ = StateInvalid();
         } else {
-          if (board_.move(s.origin(), c.pos())) {
-            state_ = StateWaiting();
+          if (board_.isCastling(s.origin(), c.pos())) {
+            state_ = StateCastling();
           } else {
-            state_ = StateInvalid();
+            if (board_.move(s.origin(), c.pos())) {
+              state_ = StateWaiting();
+            } else {
+              state_ = StateInvalid();
+            }
           }
         }
       } else {
@@ -40,7 +65,11 @@ void Machine::transition(const Change& c) {
         }
       }
     },
-    [&](const StateCastling&) {},
+    [&](const StateCastling&) {
+      if (isValid()) {
+        state_ = StateWaiting();
+      }
+    },
     [&](const StateTaking& s) {
       if (c.dir() == Direction::placed) {
         if (c.pos() == s.to()) {
@@ -59,7 +88,9 @@ void Machine::transition(const Change& c) {
   }, state_);
 }
 
-void Machine::transition(const BoardInput& cs) {
+void Machine::transition(const Footprint& f) {
+  auto cs = compare(footprint_, f);
+  footprint_ = f;
   switch (cs.size()) {
     case 0: // no change
       break;
@@ -69,10 +100,6 @@ void Machine::transition(const BoardInput& cs) {
     default: // more than one change at a time
       state_ = StateInvalid();
   }
-}
-
-void Machine::transition(const UIInput& a) {
-  // ...
 }
 
 const char* Machine::explain() const {

@@ -11,16 +11,21 @@
 namespace echess {
 
   class Main {
-    Footprint fp_;
-    Machine m_;
-
     Display& display_;
     Scanner& scanner_;
     Pointer& pointer_;
     Dial& dial_;
     Buzzer& buzzer_;
 
-    Main();
+    Machine m_;
+
+    Main() :
+      display_(Display::getInstance()),
+      scanner_(Scanner::getInstance()),
+      pointer_(Pointer::getInstance()),
+      dial_(Dial::getInstance()),
+      buzzer_(Buzzer::getInstance()),
+      m_(testBoard()) {}
 
   public:
     Main(const Main&) = delete;
@@ -33,54 +38,37 @@ namespace echess {
 
     void setup();
     void loop();
+
+    static Board testBoard() {
+      Board b;
+      b[Position("a2")] = Piece::pawn;
+      b[Position("c2")] = Piece::pawn;
+      return b;
+    }
   };
-
-  Main::Main() :
-    m_(Board()),
-    display_(Display::getInstance()),
-    scanner_(Scanner::getInstance()),
-    pointer_(Pointer::getInstance()),
-    dial_(Dial::getInstance()),
-    buzzer_(Buzzer::getInstance()) {
-
-    m_.board()[Position("a2")] = Piece::pawn;
-    m_.board()[Position("c2")] = Piece::pawn;
-  }
 
   void Main::setup() {
     Serial.begin(9600);
 
-    scanner_.read(fp_);
     display_.prepare();
     display_.print(m_.explain());
-    display_.print(fp_);
+    display_.print(m_.board());
     display_.draw();
+
     buzzer_.beep();
   }
 
   void Main::loop() {
-    Footprint fp(fp_);
+    Footprint fp(m_.footprint());
 
     scanner_.waitForInterrupt();
     scanner_.debounce(fp);
     scanner_.clearInterrupt();
 
+    m_.transition(fp);
+
     display_.prepare();
-
-    auto ds = compare(fp_, fp);
-
-    m_.transition(ds);
-
-    for (const auto& i : ds) {
-      char msg[32];
-      snprintf(msg, sizeof(msg), "%d %d %s", i.pos().x(), i.pos().y(), i.dir() == Direction::placed ? "P" : "R");
-      display_.print(msg);
-    }
-
-    fp_ = fp;
-
     display_.print(m_.explain());
-    // display_.print(fp_);
     display_.print(m_.board());
     display_.draw();
 

@@ -1,13 +1,12 @@
 
 states:
-- (W) waiting, board, pieces allowed to be removed
-- (M) moving piece, board, pieces allowed to be removed, pieces allowed to be placed
-- (C) castling, board, 
-- (T) taking piece, board, pieces allowed to be placed
-- (I) invalid state, board
+- (W) waiting
+- (M) moving piece
+- (C) castling
+- (T) taking piece
+- (I) invalid state
 
 transitions:
-
 - (W) -- piece removed           -> (M)
 - (W) -- invalid change          -> (I)
 
@@ -17,12 +16,10 @@ transitions:
 - (M) -- invalid change          -> (I)
 
 - (C) -- rook placed in castling -> (W)
-- (C) -- invalid change          -> (I)
+- (C) -- invalid state           -> (C)
 
 - (T) -- piece placed            -> (W)
 - (T) -- invalid change          -> (I) 
 
-- (I) -- new board invalid       -> (I)
-- (I) -- new board valid         -> (W)
-
-(last board, new board) -> piece placed | piece removed | invalid change
+- (I) -- invalid state           -> (I)
+- (I) -- valid state             -> (W)

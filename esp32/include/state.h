@@ -46,22 +46,21 @@ namespace echess {
   class Machine {
     using State = std::variant<StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking>;
 
+    Footprint footprint_;
     State state_;
     Board board_;
 
     void transition(const Change&);
 
   public:
-    using BoardInput = std::vector<Change>;
-    using UIInput = struct {};
+    Machine(const Board& b) { reset(b); }
 
-    Machine(const Board& b) : state_(StateWaiting()), board_(b) {};
+    void reset(const Board& b);
+    void transition(const Footprint& f);
 
-    void transition(const BoardInput&);
-    void transition(const UIInput&);
-
+    bool isValid() const;
     const Board& board() const { return board_; }
-    Board& board() { return board_; }
+    const Footprint& footprint() const { return footprint_; }
     const char* explain() const;
   };
 
