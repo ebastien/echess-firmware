@@ -35,7 +35,7 @@ void Display::print(const int32_t n) {
 
 void Display::print(const Footprint& board) {
   const u8g2_uint_t squareDim = 8;
-  const u8g2_uint_t boardDim = Topo::c_axisSquares * squareDim;
+  const u8g2_uint_t boardDim = 8 * squareDim;
 
   for (auto p : Topo()) {
     const u8g2_uint_t xs = p.x() * squareDim;
@@ -55,7 +55,7 @@ void Display::print(const Footprint& board) {
 
 void Display::print(const Board& board) {
   const u8g2_uint_t squareDim = 8;
-  const u8g2_uint_t boardDim = Topo::c_axisSquares * squareDim;
+  const u8g2_uint_t boardDim = 8 * squareDim;
 
   u8g2.setFontMode(0);
   u8g2.setFont(u8g2_font_u8glib_4_hr);

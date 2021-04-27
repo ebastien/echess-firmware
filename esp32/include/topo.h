@@ -40,9 +40,6 @@ namespace echess {
   };
 
   struct Topo {
-    static const uint8_t c_axisSquares = 8;
-    static const uint8_t c_boardSize = 64;
-
     struct Iterator {
       using iterator_category = std::forward_iterator_tag;
       using difference_type   = uint8_t;

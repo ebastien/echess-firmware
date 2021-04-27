@@ -26,7 +26,7 @@ namespace echess {
     const Direction dir() const { return d_; }
   };
   class Footprint {
-    using Array = std::array<bool, Topo::c_boardSize>;
+    using Array = std::array<bool, 64>;
 
     Array fp_ = {false};
 
@@ -64,9 +64,6 @@ namespace echess {
     Adafruit_MCP23017 s_mcps[c_mcpSquaresUnits];
 
     Scanner();
-
-    static const uint8_t c_axisSquares = Topo::c_axisSquares;
-    static const uint8_t c_boardSize = Topo::c_boardSize;
 
   public:
     Scanner(const Scanner&) = delete;
