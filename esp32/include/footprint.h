@@ -26,15 +26,20 @@ namespace echess {
     const Direction dir() const { return d_; }
   };
   class Footprint {
-    using Array = std::array<bool, 64>;
-
-    Array fp_ = {false};
+    uint64_t fp_ = 0;
 
   public:
     Footprint() {}
 
-    bool& operator[](const Position& p) { return fp_[p.natural()]; }
-    bool operator[](const Position& p) const { return fp_[p.natural()]; }
+    bool mark(const Position& p, bool s) {
+      bool was = at(p);
+      uint8_t m = p.natural();
+      fp_ = (fp_ & ~(uint64_t(1) << m)) | (uint64_t(s) << m);
+      return was;
+    }
+
+    bool at(const Position& p) const { return fp_ & (uint64_t(1) << p.natural()); }
+    bool operator[](const Position& p) const { return at(p); }
 
     friend std::vector<Change> compare(const Footprint& before, const Footprint& after) {
       std::vector<Change> cs;
@@ -47,8 +52,26 @@ namespace echess {
       return cs;
     }
 
-    Array::const_iterator begin() { return fp_.begin(); }
-    Array::const_iterator end()   { return fp_.end(); }
+    struct Iterator {
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = bool;
+      using reference         = bool;
+
+      Iterator(const Footprint& fp, Topo::Iterator it) : fp_(fp), it_(it) {}
+
+      reference operator*() const { return fp_[*it_]; }
+      Iterator& operator++() { ++it_; return *this; }
+      Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
+      friend bool operator==(const Iterator& a, const Iterator& b) { return a.it_ == b.it_; }
+      friend bool operator!=(const Iterator& a, const Iterator& b) { return a.it_ != b.it_; }
+
+    private:
+      const Footprint& fp_;
+      Topo::Iterator it_;
+    };
+
+    Iterator begin() { return Iterator(*this, Topo().begin()); }
+    Iterator end()   { return Iterator(*this, Topo().end()); }
   };
 
   class Scanner {

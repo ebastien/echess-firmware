@@ -50,7 +50,7 @@ namespace echess {
       Iterator(pointer p) : p_(p) {}
 
       reference operator*() const { return Position::fromNatural(p_); }
-      Iterator& operator++() { p_++; return *this; }
+      Iterator& operator++() { ++p_; return *this; }
       Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
       friend bool operator==(const Iterator& a, const Iterator& b) { return a.p_ == b.p_; }
       friend bool operator!=(const Iterator& a, const Iterator& b) { return a.p_ != b.p_; }

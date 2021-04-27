@@ -7,7 +7,7 @@ void Machine::reset(const Board& b) {
   state_ = StateInvalid();
   board_ = b;
   for (const auto p : Topo()) {
-    footprint_[p] = !board_.isEmpty(p);
+    footprint_.mark(p, !board_.isEmpty(p));
   }
 }
 
