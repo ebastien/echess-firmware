@@ -33,8 +33,8 @@ namespace echess {
   public:
     Footprint() {}
 
-    bool& operator[](const Position& p) { return fp_[Topo::index(p)]; }
-    bool operator[](const Position& p) const { return fp_[Topo::index(p)]; }
+    bool& operator[](const Position& p) { return fp_[p.natural()]; }
+    bool operator[](const Position& p) const { return fp_[p.natural()]; }
 
     friend std::vector<Change> compare(const Footprint& before, const Footprint& after) {
       std::vector<Change> cs;

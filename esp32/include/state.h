@@ -9,10 +9,11 @@
 
 namespace echess {
 
-  class StateWaiting {
-  public:
-    StateWaiting() {}
-  };
+  struct StateWaiting {};
+  struct StateCastling {};
+  struct StateTaking {};
+  struct StatePassant {};
+  struct StateInvalid {};
 
   class StateMoving {
     Position origin_;
@@ -23,28 +24,8 @@ namespace echess {
     const Position& origin() const { return origin_; }
   };
 
-  class StateCastling {
-  public:
-    StateCastling() {}
-  };
-
-  class StateTaking {
-    Position from_, to_;
-
-  public:
-    StateTaking(const Position& from, const Position& to) : from_(from), to_(to) {}
-
-    const Position& from() const { return from_; }
-    const Position& to() const { return to_; }
-  };
-
-  class StateInvalid {
-  public:
-    StateInvalid() {}
-  };
-
   class Machine {
-    using State = std::variant<StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking>;
+    using State = std::variant<StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking, StatePassant>;
 
     Footprint footprint_;
     State state_;

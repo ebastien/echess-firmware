@@ -40,10 +40,8 @@ namespace echess {
     void loop();
 
     static Board testBoard() {
-      Board b;
-      b[Position("a2")] = Piece::pawn;
-      b[Position("c2")] = Piece::pawn;
-      return b;
+      // return Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+      return Board("1n1qkb2/1p6/8/8/8/8/P7/R2QK2R w KQkq - 0 1");
     }
   };
 

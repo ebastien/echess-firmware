@@ -4,16 +4,16 @@
 using namespace echess;
 
 void Machine::reset(const Board& b) {
-  state_ = StateWaiting();
+  state_ = StateInvalid();
   board_ = b;
   for (const auto p : Topo()) {
-    footprint_[p] = (board_[p] != Piece::none);
+    footprint_[p] = !board_.isEmpty(p);
   }
 }
 
 bool Machine::isValid() const {
   for (const auto p : Topo()) {
-    if (footprint_[p] != (board_[p] != Piece::none)) {
+    if (footprint_[p] == board_.isEmpty(p)) {
       return false;
     }
   }
@@ -22,69 +22,54 @@ bool Machine::isValid() const {
 
 void Machine::transition(const Change& c) {
   std::visit(visitor {
-    [&](const StateInvalid&) {
-      if (isValid()) {
-        state_ = StateWaiting();
-      }
-    },
     [&](const StateWaiting&) {
-      if (c.dir() == Direction::removed) {
-        if (board_[c.pos()] == Piece::none) {
-          state_ = StateInvalid();
-        } else {
-          state_ = StateMoving(c.pos());
-        }
+      if (c.dir() == Direction::removed && board_.isPlayer(c.pos())) {
+        state_ = StateMoving(c.pos());
       } else {
         state_ = StateInvalid();
       }
     },
     [&](const StateMoving& s) {
       if (c.dir() == Direction::placed) {
-        if (board_[c.pos()] != Piece::none) {
+        // Placed
+        if (!board_.isEmpty(c.pos())) {
+          // Placed over existing piece ?!
           state_ = StateInvalid();
         } else {
-          if (board_.isCastling(s.origin(), c.pos())) {
-            state_ = StateCastling();
-          } else {
-            if (board_.move(s.origin(), c.pos())) {
-              state_ = StateWaiting();
+          auto m = board_.move(s.origin(), c.pos());
+          if (m.isValid()) {
+            board_.doMove(m);
+            if (m.isCastling()) {
+              state_ = StateCastling();
+            } else if (m.isEnPassant()) {
+              state_ = StatePassant();
             } else {
-              state_ = StateInvalid();
+              state_ = StateWaiting();
             }
+          } else {
+            state_ = StateInvalid();
           }
         }
       } else {
-        if (board_[c.pos()] == Piece::none) {
+        // Removed
+        if (board_.isEmpty(c.pos())) {
+          // Removed from empty position ?!
           state_ = StateInvalid();
         } else {
-          if (board_.isValidMove(s.origin(), c.pos())) {
-            state_ = StateTaking(s.origin(), c.pos());
+          auto m = board_.move(s.origin(), c.pos());
+          if (m.isValid() && m.isCapture()) {
+            board_.doMove(m);
+            state_ = StateTaking();
           } else {
             state_ = StateInvalid();
           }
         }
       }
     },
-    [&](const StateCastling&) {
-      if (isValid()) {
-        state_ = StateWaiting();
-      }
-    },
-    [&](const StateTaking& s) {
-      if (c.dir() == Direction::placed) {
-        if (c.pos() == s.to()) {
-          if (board_.move(s.from(), s.to())) {
-            state_ = StateWaiting();
-          } else {
-            state_ = StateInvalid();
-          }
-        } else {
-          state_ = StateInvalid();
-        }
-      } else {
-        state_ = StateInvalid();
-      }
-    },
+    [&](const StateCastling&) { if (isValid()) { state_ = StateWaiting(); } },
+    [&](const StateTaking&)   { if (isValid()) { state_ = StateWaiting(); } },
+    [&](const StatePassant&)  { if (isValid()) { state_ = StateWaiting(); } },
+    [&](const StateInvalid&)  { if (isValid()) { state_ = StateWaiting(); } },
   }, state_);
 }
 
@@ -108,6 +93,7 @@ const char* Machine::explain() const {
     [](const StateWaiting&)  { return "waiting";  },
     [](const StateMoving&)   { return "moving";   },
     [](const StateCastling&) { return "castling"; },
-    [](const StateTaking&)   { return "taking";   }
+    [](const StateTaking&)   { return "taking";   },
+    [](const StatePassant&)  { return "passant";  }
   }, state_);
 }

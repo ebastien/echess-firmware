@@ -1,0 +1,9 @@
+{
+    "name": "thc",
+    "version": "0.0.1",
+    "description": "",
+    "keywords": "",
+    "build": {
+        "flags": ""
+    }
+}

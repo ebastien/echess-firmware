@@ -57,18 +57,22 @@ void Display::print(const Board& board) {
   const u8g2_uint_t squareDim = 8;
   const u8g2_uint_t boardDim = Topo::c_axisSquares * squareDim;
 
+  u8g2.setFontMode(0);
+  u8g2.setFont(u8g2_font_u8glib_4_hr);
+
   for (auto p : Topo()) {
     const u8g2_uint_t xs = p.x() * squareDim;
     const u8g2_uint_t ys = boardDim - (p.y() + 1) * squareDim;
     const uint8_t bgColor = (p.x() + p.y()) % 2;
     const uint8_t fgColor = (bgColor + 1) % 2;
-    const Piece piece = board[p];
+    const PlayerPiece& pp = board[p];
 
     u8g2.setDrawColor(bgColor);
     u8g2.drawBox(xs, ys, squareDim, squareDim);
-    if (piece != Piece::none) {
+    if (pp.piece_ != Piece::none) {
       u8g2.setDrawColor(fgColor);
-      u8g2.drawDisc(xs + squareDim/2, ys + squareDim/2, squareDim/4);
+      u8g2.setCursor(xs + 2, ys + squareDim - 2);
+      u8g2.print(pp.symbol());
     }
   }
 }
