@@ -3,7 +3,7 @@
 
 using namespace echess;
 
-Move Board::move(const Position& from, const Position& to) const {
+Move Board::move(const Square& from, const Square& to) const {
   char tm[5];
   from.terse(tm); to.terse(tm + 2); tm[4] = 0;
   Move m;

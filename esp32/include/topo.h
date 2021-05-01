@@ -6,7 +6,7 @@
 
 namespace echess {
 
-  struct Position {
+  struct Square {
     enum Label : uint8_t {
       a8=0, b8, c8, d8, e8, f8, g8, h8,
         a7, b7, c7, d7, e7, f7, g7, h7,
@@ -18,12 +18,12 @@ namespace echess {
         a1, b1, c1, d1, e1, f1, g1, h1
     };
 
-    Position(Label l) : l_(l) {}
-    Position(uint8_t x, uint8_t y) : l_(Label((7 - y) * 8 + x)) {}
-    Position(const char* n) : Position(n[0] - 'a', n[1] - '1') {}
+    Square(Label l) : l_(l) {}
+    Square(uint8_t x, uint8_t y) : l_(Label((7 - y) * 8 + x)) {}
+    Square(const char* n) : Square(n[0] - 'a', n[1] - '1') {}
 
-    friend bool operator==(const Position& a, const Position& b) { return a.l_ == b.l_; }
-    friend bool operator!=(const Position& a, const Position& b) { return a.l_ != b.l_; }
+    friend bool operator==(const Square& a, const Square& b) { return a.l_ == b.l_; }
+    friend bool operator!=(const Square& a, const Square& b) { return a.l_ != b.l_; }
 
     uint8_t x() const { return l_ % 8; }
     uint8_t y() const { return 7 - l_ / 8; }
@@ -32,8 +32,8 @@ namespace echess {
 
     void terse(char* t) const { t[0] = 'a' + x(); t[1] = '1' + y(); }
 
-    static Position fromNatural(uint8_t index) { return Position(index % 8, index / 8); }
-    static Position fromForsyth(uint8_t index) { return Position(Label(index)); }
+    static Square fromNatural(uint8_t index) { return Square(index % 8, index / 8); }
+    static Square fromForsyth(uint8_t index) { return Square(Label(index)); }
 
   private:
     Label l_;
@@ -44,12 +44,12 @@ namespace echess {
       using iterator_category = std::forward_iterator_tag;
       using difference_type   = uint8_t;
       using pointer           = uint8_t;
-      using value_type        = Position;
+      using value_type        = Square;
       using reference         = value_type;
 
       Iterator(pointer p) : p_(p) {}
 
-      reference operator*() const { return Position::fromNatural(p_); }
+      reference operator*() const { return Square::fromNatural(p_); }
       Iterator& operator++() { ++p_; return *this; }
       Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
       friend bool operator==(const Iterator& a, const Iterator& b) { return a.p_ == b.p_; }

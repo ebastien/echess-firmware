@@ -16,13 +16,13 @@ namespace echess {
   };
 
   class Change {
-    Position p_;
+    Square p_;
     Direction d_;
 
   public:
-    Change(const Position& p, const Direction d): p_(p), d_(d) {}
+    Change(const Square& p, const Direction d): p_(p), d_(d) {}
 
-    const Position& pos() const { return p_; }
+    const Square& pos() const { return p_; }
     const Direction dir() const { return d_; }
   };
   class Footprint {
@@ -31,15 +31,15 @@ namespace echess {
   public:
     Footprint() {}
 
-    bool mark(const Position& p, bool s) {
+    bool mark(const Square& p, bool s) {
       bool was = at(p);
       uint8_t m = p.natural();
       fp_ = (fp_ & ~(uint64_t(1) << m)) | (uint64_t(s) << m);
       return was;
     }
 
-    bool at(const Position& p) const { return fp_ & (uint64_t(1) << p.natural()); }
-    bool operator[](const Position& p) const { return at(p); }
+    bool at(const Square& p) const { return fp_ & (uint64_t(1) << p.natural()); }
+    bool operator[](const Square& p) const { return at(p); }
 
     friend std::vector<Change> compare(const Footprint& before, const Footprint& after) {
       std::vector<Change> cs;

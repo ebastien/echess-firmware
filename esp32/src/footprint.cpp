@@ -41,7 +41,7 @@ bool Scanner::read(Footprint& f) {
   for (uint8_t n = 0; n < c_mcpSquaresUnits; n++) {
     const uint16_t gpios = s_mcps[n].readGPIOAB();
     for (uint8_t p = 0; p < c_mcpGPIOs; p++) {
-      auto pos = Position::fromNatural(c_mcpUnitLayout[n] * c_mcpGPIOs + p);
+      auto pos = Square::fromNatural(c_mcpUnitLayout[n] * c_mcpGPIOs + p);
       bool square = ! (gpios & (1 << p));
       if (f.mark(pos, square) != square) {
         changed = true;

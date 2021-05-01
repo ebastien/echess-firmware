@@ -17,12 +17,12 @@ namespace echess {
   struct StateEnd {};
 
   class StateMoving {
-    Position origin_;
+    Square origin_;
 
   public:
-    StateMoving(const Position& o) : origin_(o) {}
+    StateMoving(const Square& o) : origin_(o) {}
 
-    const Position& origin() const { return origin_; }
+    const Square& origin() const { return origin_; }
   };
 
   class Machine {

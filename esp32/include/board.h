@@ -89,8 +89,8 @@ namespace echess {
     Move(const Move&) = default;
     Move& operator=(const Move&) = default;
 
-    Position from() const { return Position::fromForsyth(m_.src); }
-    Position to() const { return Position::fromForsyth(m_.dst); }
+    Square from() const { return Square::fromForsyth(m_.src); }
+    Square to() const { return Square::fromForsyth(m_.dst); }
 
     bool isValid() const;
     bool isCastling() const;
@@ -105,13 +105,13 @@ namespace echess {
     Board() {}
     Board(const char* fen) { cr_.Forsyth(fen); }
 
-    PlayerPiece at(const Position& p) const { return PlayerPiece(cr_.squares[p.forsyth()]); }
-    PlayerPiece operator[](const Position& p) const { return at(p); }
+    PlayerPiece at(const Square& p) const { return PlayerPiece(cr_.squares[p.forsyth()]); }
+    PlayerPiece operator[](const Square& p) const { return at(p); }
     Player player() const { return cr_.WhiteToPlay() ? Player::white : Player::black; }
-    Move move(const Position& from, const Position& to) const;
+    Move move(const Square& from, const Square& to) const;
 
-    bool isEmpty(const Position& p) const { return at(p).piece_ == Piece::none; }
-    bool isPlayer(const Position& p) const { return !isEmpty(p) && at(p).player_ == player(); }
+    bool isEmpty(const Square& p) const { return at(p).piece_ == Piece::none; }
+    bool isPlayer(const Square& p) const { return !isEmpty(p) && at(p).player_ == player(); }
     bool doMove(const Move& m);
 
     struct Iterator {
@@ -123,7 +123,7 @@ namespace echess {
 
       Iterator(const Board& board, const pointer index) : board_(board), index_(index) {}
 
-      reference operator*() const { return board_.at(Position::fromNatural(index_)); }
+      reference operator*() const { return board_.at(Square::fromNatural(index_)); }
       Iterator& operator++() { index_++; return *this; }
       Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
       friend bool operator==(const Iterator& a, const Iterator& b) { return a.index_ == b.index_; }
