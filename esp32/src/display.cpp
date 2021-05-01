@@ -58,7 +58,7 @@ void Display::print(const Board& board) {
   const u8g2_uint_t boardDim = 8 * squareDim;
 
   u8g2.setFontMode(0);
-  u8g2.setFont(u8g2_font_u8glib_4_hr);
+  u8g2.setFont(u8g2_font_5x7_tf);
 
   for (auto p : Topo()) {
     const u8g2_uint_t xs = p.x() * squareDim;
@@ -71,7 +71,7 @@ void Display::print(const Board& board) {
     u8g2.drawBox(xs, ys, squareDim, squareDim);
     if (pp.piece_ != Piece::none) {
       u8g2.setDrawColor(fgColor);
-      u8g2.setCursor(xs + 2, ys + squareDim - 2);
+      u8g2.setCursor(xs + 2, ys + squareDim - 1);
       u8g2.print(pp.symbol());
     }
   }

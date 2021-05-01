@@ -94,6 +94,7 @@ const char* Machine::explain() const {
     [](const StateMoving&)   { return "moving";   },
     [](const StateCastling&) { return "castling"; },
     [](const StateTaking&)   { return "taking";   },
-    [](const StatePassant&)  { return "passant";  }
+    [](const StatePassant&)  { return "passant";  },
+    [](const StateEnd&)      { return "end";      }
   }, state_);
 }

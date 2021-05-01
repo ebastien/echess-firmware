@@ -14,6 +14,7 @@ namespace echess {
   struct StateTaking {};
   struct StatePassant {};
   struct StateInvalid {};
+  struct StateEnd {};
 
   class StateMoving {
     Position origin_;
