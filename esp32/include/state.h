@@ -9,12 +9,20 @@
 
 namespace echess {
 
+  struct StateInit {};
   struct StateWaiting {};
   struct StateCastling {};
   struct StateTaking {};
   struct StatePassant {};
   struct StateInvalid {};
-  struct StateEnd {};
+  struct StateOver {
+    Situation s_;
+
+  public:
+    StateOver(const Situation& s) : s_(s) {}
+
+    const Situation& situation() const { return s_; }
+  };
 
   class StateMoving {
     Square origin_;
@@ -26,13 +34,15 @@ namespace echess {
   };
 
   class Machine {
-    using State = std::variant<StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking, StatePassant>;
+    using State = std::variant<StateInit, StateInvalid, StateWaiting, StateMoving, StateCastling, StateTaking, StatePassant, StateOver>;
 
     Footprint footprint_;
     State state_;
     Board board_;
 
-    void transition(const Change&);
+    void waiting(const Change& c);
+    void moving(const StateMoving& s, const Change& c);
+    void syncing();
 
   public:
     Machine(const Board& b) { reset(b); }
@@ -43,7 +53,7 @@ namespace echess {
     bool isValid() const;
     const Board& board() const { return board_; }
     const Footprint& footprint() const { return footprint_; }
-    const char* explain() const;
+    std::string explain() const;
   };
 
 }

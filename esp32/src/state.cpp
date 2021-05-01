@@ -4,11 +4,9 @@
 using namespace echess;
 
 void Machine::reset(const Board& b) {
-  state_ = StateInvalid();
+  state_ = StateInit();
+  footprint_ = Footprint();
   board_ = b;
-  for (const auto p : Topo()) {
-    footprint_.mark(p, !board_.isEmpty(p));
-  }
 }
 
 bool Machine::isValid() const {
@@ -20,81 +18,88 @@ bool Machine::isValid() const {
   return true;
 }
 
-void Machine::transition(const Change& c) {
-  std::visit(visitor {
-    [&](const StateWaiting&) {
-      if (c.dir() == Direction::removed && board_.isPlayer(c.pos())) {
-        state_ = StateMoving(c.pos());
+void Machine::syncing() {
+  if (isValid()) {
+    if (board_.isOver()) {
+      state_ = StateOver(board_.situation());
+    } else {
+      state_ = StateWaiting();
+    }
+  }
+}
+
+void Machine::waiting(const Change& c) {
+  if (c.dir() == Direction::removed && board_.isPlayer(c.pos())) {
+    state_ = StateMoving(c.pos());
+  } else {
+    state_ = StateInvalid();
+  }
+}
+
+void Machine::moving(const StateMoving& s, const Change& c) {
+  if (c.dir() == Direction::placed) {
+    // Placed
+    auto m = board_.move(s.origin(), c.pos());
+    if (m.isValid()) {
+      board_.doMove(m);
+      if (m.isCastling()) {
+        state_ = StateCastling();
+      } else if (m.isEnPassant()) {
+        state_ = StatePassant();
+      } else if (board_.isOver()) {
+        state_ = StateOver(board_.situation());
       } else {
-        state_ = StateInvalid();
+        state_ = StateWaiting();
       }
-    },
-    [&](const StateMoving& s) {
-      if (c.dir() == Direction::placed) {
-        // Placed
-        if (!board_.isEmpty(c.pos())) {
-          // Placed over existing piece ?!
-          state_ = StateInvalid();
-        } else {
-          auto m = board_.move(s.origin(), c.pos());
-          if (m.isValid()) {
-            board_.doMove(m);
-            if (m.isCastling()) {
-              state_ = StateCastling();
-            } else if (m.isEnPassant()) {
-              state_ = StatePassant();
-            } else {
-              state_ = StateWaiting();
-            }
-          } else {
-            state_ = StateInvalid();
-          }
-        }
-      } else {
-        // Removed
-        if (board_.isEmpty(c.pos())) {
-          // Removed from empty position ?!
-          state_ = StateInvalid();
-        } else {
-          auto m = board_.move(s.origin(), c.pos());
-          if (m.isValid() && m.isCapture()) {
-            board_.doMove(m);
-            state_ = StateTaking();
-          } else {
-            state_ = StateInvalid();
-          }
-        }
-      }
-    },
-    [&](const StateCastling&) { if (isValid()) { state_ = StateWaiting(); } },
-    [&](const StateTaking&)   { if (isValid()) { state_ = StateWaiting(); } },
-    [&](const StatePassant&)  { if (isValid()) { state_ = StateWaiting(); } },
-    [&](const StateInvalid&)  { if (isValid()) { state_ = StateWaiting(); } },
-  }, state_);
+    } else {
+      state_ = StateInvalid();
+    }
+  } else {
+    // Removed
+    auto m = board_.move(s.origin(), c.pos());
+    if (m.isValid() && m.isCapture()) {
+      board_.doMove(m);
+      state_ = StateTaking();
+    } else {
+      state_ = StateInvalid();
+    }
+  }
 }
 
 void Machine::transition(const Footprint& f) {
   auto cs = compare(footprint_, f);
   footprint_ = f;
-  switch (cs.size()) {
-    case 0: // no change
-      break;
-    case 1: // a single change
-      transition(cs.front());
-      break;
-    default: // more than one change at a time
-      state_ = StateInvalid();
+  if (!cs.empty()) {
+    std::visit(visitor {
+      [&](const StateInit&)     { syncing(); },
+      [&](const StateWaiting&)  { if (cs.size() == 1) { waiting(cs.front());   } else { state_ = StateInvalid(); } },
+      [&](const StateMoving& s) { if (cs.size() == 1) { moving(s, cs.front()); } else { state_ = StateInvalid(); } },
+      [&](const StateCastling&) { syncing(); },
+      [&](const StateTaking&)   { syncing(); },
+      [&](const StatePassant&)  { syncing(); },
+      [&](const StateInvalid&)  { syncing(); },
+      [&](const StateOver&)     {}
+    }, state_);
   }
 }
 
-const char* Machine::explain() const {
+std::string Machine::explain() const {
   return std::visit(visitor {
-    [](const StateInvalid&)  { return "invalid";  },
-    [](const StateWaiting&)  { return "waiting";  },
-    [](const StateMoving&)   { return "moving";   },
-    [](const StateCastling&) { return "castling"; },
-    [](const StateTaking&)   { return "taking";   },
-    [](const StatePassant&)  { return "passant";  },
-    [](const StateEnd&)      { return "end";      }
+    [](const StateInit&)     { return std::string("init"); },
+    [](const StateInvalid&)  { return std::string("invalid pos"); },
+    [](const StateWaiting&)  { return std::string("waiting..."); },
+    [](const StateMoving& s) { return std::string("moving ") + s.origin().terse(); },
+    [](const StateCastling&) { return std::string("castling"); },
+    [](const StateTaking&)   { return std::string("taking"); },
+    [](const StatePassant&)  { return std::string("en passant"); },
+    [](const StateOver& s)   {
+      switch (s.situation()) {
+        case Situation::blackCheckMate: return std::string("black mate");
+        case Situation::whiteCheckMate: return std::string("white mate");
+        case Situation::blackStaleMate: return std::string("black stale");
+        case Situation::whiteStaleMate: return std::string("white stale");
+        default:                        return std::string("game over");
+      }
+    }
   }, state_);
 }

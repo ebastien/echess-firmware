@@ -25,6 +25,14 @@ namespace echess {
     black
   };
 
+  enum class Situation {
+    ingame = 0,
+    whiteCheckMate,
+    blackCheckMate,
+    whiteStaleMate,
+    blackStaleMate
+  };
+
   struct PlayerPiece {
     Player player_ = Player::white;
     Piece piece_ = Piece::none;
@@ -112,6 +120,10 @@ namespace echess {
 
     bool isEmpty(const Square& p) const { return at(p).piece_ == Piece::none; }
     bool isPlayer(const Square& p) const { return !isEmpty(p) && at(p).player_ == player(); }
+    bool isOver() const { return situation() != Situation::ingame; }
+
+    Situation situation() const;
+
     bool doMove(const Move& m);
 
     struct Iterator {

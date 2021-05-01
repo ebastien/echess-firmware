@@ -25,6 +25,7 @@ namespace echess {
     void prepare();
     void draw();
     void print(const char *msg);
+    void print(const std::string& s);
     void print(const int32_t n);
     void print(const Footprint& board);
     void print(const Board& board);

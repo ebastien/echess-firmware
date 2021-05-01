@@ -40,13 +40,16 @@ namespace echess {
     void loop();
 
     static Board testBoard() {
-      // return Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-      return Board("1n1qkb2/1p6/8/8/8/8/P7/R2QK2R w KQkq - 0 1");
+      return Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
   };
 
   void Main::setup() {
     Serial.begin(9600);
+
+    Footprint fp;
+    scanner_.read(fp);
+    m_.transition(fp);
 
     display_.prepare();
     display_.print(m_.explain());

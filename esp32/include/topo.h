@@ -31,6 +31,7 @@ namespace echess {
     uint8_t forsyth() const { return l_; }
 
     void terse(char* t) const { t[0] = 'a' + x(); t[1] = '1' + y(); }
+    std::string terse() const { char t[3] = {0}; terse(t); return std::string(t); }
 
     static Square fromNatural(uint8_t index) { return Square(index % 8, index / 8); }
     static Square fromForsyth(uint8_t index) { return Square(Label(index)); }

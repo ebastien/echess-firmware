@@ -21,10 +21,14 @@ void Display::draw() {
 void Display::print(const char *msg) {
   u8g2.setDrawColor(1);
   u8g2.setFontMode(0);
-  u8g2.setFont(u8g2_font_u8glib_4_hr);
-  u8g2.setCursor(65, 10 + row * 5);
+  u8g2.setFont(u8g2_font_5x7_tf);
+  u8g2.setCursor(68, (row + 1) * 7);
   u8g2.print(msg);
   row++;
+}
+
+void Display::print(const std::string& s) {
+  print(s.c_str());
 }
 
 void Display::print(const int32_t n) {

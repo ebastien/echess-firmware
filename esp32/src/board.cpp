@@ -34,6 +34,18 @@ bool Move::isCapture() const {
   return m_.capture != ' ';
 }
 
+Situation Board::situation() const {
+  thc::TERMINAL t;
+  const_cast<thc::ChessRules&>(cr_).Evaluate(t);
+  switch (t) {
+    case thc::TERMINAL_WCHECKMATE: return Situation::whiteCheckMate;
+    case thc::TERMINAL_WSTALEMATE: return Situation::whiteStaleMate;
+    case thc::TERMINAL_BCHECKMATE: return Situation::blackCheckMate;
+    case thc::TERMINAL_BSTALEMATE: return Situation::whiteStaleMate;
+    default:                       return Situation::ingame;
+  }
+}
+
 bool Board::doMove(const Move& m) {
   if (!m.isValid()) {
     return false;
