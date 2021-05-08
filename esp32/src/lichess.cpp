@@ -38,9 +38,13 @@ bool Lichess::findGame() {
   }
   const auto& game = doc["nowPlaying"][0];
   gameId_ = game["gameId"].as<gameid_t>();
-  // bool isMyTurn = game["isMyTurn"];
-  // const char* color = game["color"];
+  if (game["color"] == "black") {
+    player_ = Player::black;
+  } else {
+    player_ = Player::white;
+  }
   Serial.print("Game ID: "); Serial.println(gameId_.c_str());
+  Serial.print("Player: "); Serial.println(player_ == Player::white ? "white" : "black");
   return true;
 }
 
@@ -85,5 +89,6 @@ bool Lichess::readGameState() {
   if (newState == gameState_) {
     return false;
   }
+  gameState_ = newState;
   return true;
 }

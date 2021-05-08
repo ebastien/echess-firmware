@@ -113,10 +113,13 @@ namespace echess {
     Board() {}
     Board(const char* fen) { cr_.Forsyth(fen); }
 
+    bool fromMoves(const char* moves);
+
     PlayerPiece at(const Square& p) const { return PlayerPiece(cr_.squares[p.forsyth()]); }
     PlayerPiece operator[](const Square& p) const { return at(p); }
     Player player() const { return cr_.WhiteToPlay() ? Player::white : Player::black; }
     Move move(const Square& from, const Square& to) const;
+    Move move(const char* terse) const;
 
     bool isEmpty(const Square& p) const { return at(p).piece_ == Piece::none; }
     bool isPlayer(const Square& p) const { return !isEmpty(p) && at(p).player_ == player(); }

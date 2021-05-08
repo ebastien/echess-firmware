@@ -9,8 +9,6 @@ namespace echess {
 
   class Remote {
 
-    std::string ssid_, pass_;
-
     Remote() {};
 
   public:
@@ -22,11 +20,7 @@ namespace echess {
       return instance;
     }
 
-    void configure(const std::string& ssid, const std::string& pass) {
-      ssid_ = ssid; pass_ = pass;
-    }
-
-    void connect();
+    void connect(const char* ssid, const char* pass);
   };
 
 }

@@ -9,6 +9,7 @@
 #include "state.h"
 #include "remote.h"
 #include "lichess.h"
+#include "storage.h"
 
 namespace echess {
 
@@ -20,6 +21,7 @@ namespace echess {
     Buzzer& buzzer_;
     Remote& remote_;
     Lichess& lichess_;
+    Storage& storage_;
 
     Machine m_;
 
@@ -31,7 +33,7 @@ namespace echess {
       buzzer_(Buzzer::getInstance()),
       remote_(Remote::getInstance()),
       lichess_(Lichess::getInstance()),
-      m_(testBoard()) {}
+      storage_(Storage::getInstance()) {}
 
   public:
     Main(const Main&) = delete;
@@ -44,16 +46,32 @@ namespace echess {
 
     void setup();
     void loop();
-
-    static Board testBoard() {
-      return Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    }
   };
 
   void Main::setup() {
     Serial.begin(9600);
+    delay(5);
 
-    remote_.connect();
+    if (!storage_.initialize()) {
+      while (true) { delay(100); }
+    }
+
+    remote_.connect(storage_.ssid(), storage_.password());
+
+    lichess_.setToken(storage_.lichessKey());
+    lichess_.findGame();
+    while (!lichess_.isGamePlaying()) {
+      delay(1000);
+      lichess_.findGame();
+    }
+    if (!lichess_.readGameState()) {
+      while (true) { delay(100); }
+    }
+    Board board;
+    if (!board.fromMoves(lichess_.moves())) {
+      while (true) { delay(100); }
+    }
+    m_.reset(board);
 
     Footprint fp;
     scanner_.read(fp);

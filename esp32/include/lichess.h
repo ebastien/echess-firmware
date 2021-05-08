@@ -2,6 +2,7 @@
 #define _ECHESS_LICHESS_H
 
 #include "httpclient.h"
+#include "board.h"
 
 #include <string>
 
@@ -20,6 +21,7 @@ namespace echess {
     HTTPClient client_;
     gameid_t gameId_;
     gamestate_t gameState_;
+    Player player_;
 
     Lichess() : client_(baseURL()) { reset(); }
 
@@ -32,7 +34,8 @@ namespace echess {
       return instance;
     }
 
-    gamestate_t state() const { return gameState_; }
+    const char* moves() const { return gameState_.c_str(); }
+    Player player() const { return player_; }
 
     void setToken(const std::string& token) { token_ = token; }
     void reset() { gameId_.clear(); gameState_.clear(); }

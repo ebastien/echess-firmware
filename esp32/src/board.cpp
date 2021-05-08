@@ -53,3 +53,19 @@ bool Board::doMove(const Move& m) {
   cr_.PlayMove(m.m_);
   return true;
 }
+
+Move Board::move(const char* terse) const {
+  Square from(terse), to(terse+2);
+  return move(from, to);
+}
+
+bool Board::fromMoves(const char* moves) {
+  const int n = (strlen(moves) + 1) / 5;
+  for (int i = 0; i < n; ++i) {
+    const auto m = move(moves + i * 5);
+    if (!doMove(m)) {
+      return false;
+    }
+  }
+  return true;
+}

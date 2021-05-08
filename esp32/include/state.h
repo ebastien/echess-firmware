@@ -45,6 +45,7 @@ namespace echess {
     void syncing();
 
   public:
+    Machine();
     Machine(const Board& b) { reset(b); }
 
     void reset(const Board& b);

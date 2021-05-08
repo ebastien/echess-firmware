@@ -5,11 +5,11 @@
 
 using namespace echess;
 
-void Remote::connect() {
+void Remote::connect(const char* ssid, const char* pass) {
   if (WiFi.isConnected()) {
     return;
   }
-  WiFi.begin(ssid_.c_str(), pass_.c_str());
+  WiFi.begin(ssid, pass);
   while(!WiFi.isConnected()) {
     delay(500);
     Serial.print(".");

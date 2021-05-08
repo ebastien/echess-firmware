@@ -4,6 +4,9 @@
 #include "SD.h"
 #include "SPI.h"
 
+#define ARDUINOJSON_ENABLE_PROGMEM 0
+#include <ArduinoJson.h>
+
 void i2cInit()
 {
   Wire.begin();
@@ -55,4 +58,33 @@ void sdInit() {
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
+
+  const char* fname = "/echess.json";
+
+  if (!SD.exists(fname)) {
+    Serial.println("No configuration file found");
+    return;
+  }
+  File file = SD.open(fname);
+  if (!file) {
+    Serial.println("Could not open configuration file");
+    return;
+  }
+  Serial.println("Configuration file opened");
+
+  StaticJsonDocument<768> doc;
+  DeserializationError error(DeserializationError::Ok);
+  error = deserializeJson(doc, file);
+  if (error) {
+    Serial.print("deserialization failed: "); Serial.println(error.c_str());
+  } else {
+    auto ssid = doc["ssid"].as<std::string>();
+    auto password = doc["password"].as<std::string>();
+    auto apiKey = doc["lichessKey"].as<std::string>();
+    Serial.println(ssid.c_str());
+    Serial.println(password.c_str());
+    Serial.println(apiKey.c_str());
+  }
+
+  file.close();
 }

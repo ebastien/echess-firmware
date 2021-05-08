@@ -3,6 +3,10 @@
 
 using namespace echess;
 
+Machine::Machine() {
+  reset(Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
+}
+
 void Machine::reset(const Board& b) {
   state_ = StateInit();
   footprint_ = Footprint();
