@@ -7,6 +7,8 @@
 #include "display.h"
 #include "buzzer.h"
 #include "state.h"
+#include "remote.h"
+#include "lichess.h"
 
 namespace echess {
 
@@ -16,6 +18,8 @@ namespace echess {
     Pointer& pointer_;
     Dial& dial_;
     Buzzer& buzzer_;
+    Remote& remote_;
+    Lichess& lichess_;
 
     Machine m_;
 
@@ -25,6 +29,8 @@ namespace echess {
       pointer_(Pointer::getInstance()),
       dial_(Dial::getInstance()),
       buzzer_(Buzzer::getInstance()),
+      remote_(Remote::getInstance()),
+      lichess_(Lichess::getInstance()),
       m_(testBoard()) {}
 
   public:
@@ -46,6 +52,8 @@ namespace echess {
 
   void Main::setup() {
     Serial.begin(9600);
+
+    remote_.connect();
 
     Footprint fp;
     scanner_.read(fp);

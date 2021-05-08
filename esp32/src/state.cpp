@@ -39,20 +39,24 @@ void Machine::waiting(const Change& c) {
 void Machine::moving(const StateMoving& s, const Change& c) {
   if (c.dir() == Direction::placed) {
     // Placed
-    auto m = board_.move(s.origin(), c.pos());
-    if (m.isValid()) {
-      board_.doMove(m);
-      if (m.isCastling()) {
-        state_ = StateCastling();
-      } else if (m.isEnPassant()) {
-        state_ = StatePassant();
-      } else if (board_.isOver()) {
-        state_ = StateOver(board_.situation());
-      } else {
-        state_ = StateWaiting();
-      }
+    if (s.origin() == c.pos()) {
+      state_ = StateWaiting();
     } else {
-      state_ = StateInvalid();
+      auto m = board_.move(s.origin(), c.pos());
+      if (m.isValid()) {
+        board_.doMove(m);
+        if (m.isCastling()) {
+          state_ = StateCastling();
+        } else if (m.isEnPassant()) {
+          state_ = StatePassant();
+        } else if (board_.isOver()) {
+          state_ = StateOver(board_.situation());
+        } else {
+          state_ = StateWaiting();
+        }
+      } else {
+        state_ = StateInvalid();
+      }
     }
   } else {
     // Removed
