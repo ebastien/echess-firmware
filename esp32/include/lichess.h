@@ -22,7 +22,6 @@ namespace echess {
     HTTPClient clientStream_, clientPlay_;
     gameid_t gameId_;
     Player player_;
-    Moves moves_;
 
     Lichess() : clientStream_(baseURL()), clientPlay_(baseURL()) { reset(); }
 
@@ -35,15 +34,14 @@ namespace echess {
       return instance;
     }
 
-    const Moves& moves() const { return moves_; }
     Player player() const { return player_; }
 
     void setToken(const std::string& token) { token_ = token; }
-    void reset() { gameId_.clear(); moves_.clear(); }
+    void reset() { gameId_.clear(); }
     bool isGamePlaying() const { return !gameId_.empty(); }
     bool findGame();
-    bool waitGameState(const int min);
-    bool makeMove(const Move& m);
+    std::optional<UCIMoves> waitGameState(const int min = -1);
+    bool makeMove(const UCIMove& m);
     void close() { clientStream_.close(); clientPlay_.close(); }
   };
 }

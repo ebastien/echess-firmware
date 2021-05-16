@@ -2,7 +2,7 @@
 
 using namespace echess;
 
-void Moves::parse(const char* m) {
+void UCIMoves::parse(const char* m) {
   m_.clear();
   for (const char* p = m; *p != '\0';) {
     if (*p == ' ') { ++p; continue; }
@@ -11,7 +11,7 @@ void Moves::parse(const char* m) {
   }
 }
 
-std::string Moves::uci() const {
+std::string UCIMoves::str() const {
   std::string s;
   for (auto it = begin(); it != end(); ++it) {
     if (it != begin()) s += " ";

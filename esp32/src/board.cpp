@@ -49,10 +49,11 @@ bool Board::doMove(const Move& m) {
     return false;
   }
   cr_.PlayMove(m.m_);
+  moves_.push_back(m);
   return true;
 }
 
-bool Board::fromMoves(const Moves& moves) {
+bool Board::fromMoves(const UCIMoves& moves) {
   for (const auto& m : moves) {
     if (!doMove(move(m))) {
       return false;

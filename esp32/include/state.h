@@ -3,7 +3,6 @@
 
 #include <variant>
 #include <vector>
-#include <optional>
 
 #include "board.h"
 #include "footprint.h"
@@ -43,7 +42,6 @@ namespace echess {
     Footprint footprint_;
     State state_;
     Board board_;
-    std::vector<Move> moves_;
 
     void move(const Move& m);
 
@@ -57,16 +55,13 @@ namespace echess {
 
     void reset(const Board& b);
     void transition(const Footprint& f);
-    void transition(const Moves& moves);
+    void transition(const UCIMoves& moves);
 
     bool isValid() const;
     bool isReady() const;
     const Board& board() const { return board_; }
     const Footprint& footprint() const { return footprint_; }
     std::string explain() const;
-    std::optional<Move> lastMove() const {
-      return moves_.empty() ? std::nullopt : std::optional<Move>(moves_.back());
-    }
   };
 
 }

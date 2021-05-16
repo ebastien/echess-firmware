@@ -25,11 +25,13 @@ Scanner::Scanner() {
   attachInterrupt(c_gpioInterrupt, interruptCallback, RISING);
 }
 
-void Scanner::waitForInterrupt() {
+bool Scanner::waitForInterrupt(const unsigned long timeout) {
+  unsigned long start = millis();
   for (uint8_t n = 0; n < c_mcpSquaresUnits; n++) {
     s_mcps[n].getLastInterruptPinValue();
   }
-  while (!awakenByInterrupt) { delay(10); }
+  while (!awakenByInterrupt && (millis() - start < timeout)) { delay(10); }
+  return awakenByInterrupt;
 }
 
 void Scanner::clearInterrupt() {

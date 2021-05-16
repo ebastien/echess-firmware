@@ -24,6 +24,7 @@ namespace echess {
     Storage& storage_;
 
     Machine m_;
+    unsigned long tick_ = 0;
 
     Main() :
       display_(Display::getInstance()),
@@ -34,6 +35,8 @@ namespace echess {
       remote_(Remote::getInstance()),
       lichess_(Lichess::getInstance()),
       storage_(Storage::getInstance()) {}
+
+    void redraw();
 
   public:
     Main(const Main&) = delete;
@@ -64,12 +67,13 @@ namespace echess {
       delay(1000);
       lichess_.findGame();
     }
-    if (!lichess_.waitGameState(-1)) {
+    const auto moves = lichess_.waitGameState();
+    if (!moves) {
       Serial.println("fatal: cannot read game state");
       while (true) { delay(100); }
     }
     Board board;
-    if (!board.fromMoves(lichess_.moves())) {
+    if (!board.fromMoves(*moves)) {
       Serial.println("fatal: cannot play initial moves");
       while (true) { delay(100); }
     }
@@ -79,47 +83,66 @@ namespace echess {
     scanner_.read(fp);
     m_.transition(fp);
 
-    display_.prepare();
-    display_.print(m_.explain());
-    display_.print(m_.footprint());
-    display_.draw();
+    redraw();
 
     buzzer_.beep();
+  }
+
+  void Main::redraw() {
+
+    const auto lastMove = m_.board().lastMove();
+
+    display_.prepare();
+
+    if (lastMove) {
+      display_.print(lastMove->uci().c_str());
+    }
+
+    display_.print(m_.explain());
+
+    if (tick_ % 2 == 0) {
+      display_.print(m_.footprint());
+    } else {
+      display_.print(m_.board());
+    }
+
+    display_.draw();
   }
 
   void Main::loop() {
 
     if (m_.isReady() && m_.board().player() != lichess_.player()) {
 
-      auto move = m_.lastMove();
-      if (move) {
-        lichess_.makeMove(*move);
+      const auto lastMove = m_.board().lastMove();
+      if (lastMove) {
+        lichess_.makeMove(lastMove->uci());
       }
 
-      if (!lichess_.waitGameState(lichess_.moves().length())) {
+      const auto moves = lichess_.waitGameState(m_.board().length());
+
+      if (!moves) {
         Serial.println("warning: cannot read game state");
         return;
       }
 
-      m_.transition(lichess_.moves());
+      m_.transition(*moves);
+      buzzer_.beep();
 
     } else {
 
       Footprint fp(m_.footprint());
 
-      scanner_.waitForInterrupt();
-      scanner_.debounce(fp);
-      scanner_.clearInterrupt();
-
-      m_.transition(fp);
+      if (scanner_.waitForInterrupt(1000)) {
+        scanner_.debounce(fp);
+        scanner_.clearInterrupt();
+        m_.transition(fp);
+        buzzer_.beep();
+      }
     }
 
-    display_.prepare();
-    display_.print(m_.explain());
-    display_.print(m_.board());
-    display_.draw();
+    redraw();
 
-    buzzer_.beep();
+    ++tick_;
   }
 
 }

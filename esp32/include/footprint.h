@@ -97,7 +97,7 @@ namespace echess {
       return instance;
     }
 
-    void waitForInterrupt();
+    bool waitForInterrupt(const unsigned long timeout = 0);
     void clearInterrupt();
     bool read(Footprint& fp);
     void debounce(Footprint& fp);

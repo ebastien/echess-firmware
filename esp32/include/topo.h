@@ -70,15 +70,6 @@ namespace echess {
     Iterator end()   { return Iterator(64); }
   };
 
-  // struct UCISquare {
-  //   UCISquare(const Square& s) : s_({ s.ax(), s.ay(), '\0' }) {}
-
-  //   const char* c_str() const { return s_.data(); }
-
-  // private:
-  //   std::array<char, 3> s_;
-  // };
-
   class UCIMove {
     std::array<char, 6> m_;
 
@@ -93,24 +84,26 @@ namespace echess {
     Square from() const { return Square(m_.data()); }
     Square to() const { return Square(m_.data() + 2); }
     const char* c_str() const { return m_.data(); }
+
+    friend bool operator==(const UCIMove& a, const UCIMove& b) { return a.m_ == b.m_; }
+    friend bool operator!=(const UCIMove& a, const UCIMove& b) { return a.m_ != b.m_; }
   };
 
-  class Moves {
+  class UCIMoves {
     std::vector<UCIMove> m_;
 
     void parse(const char* m);
 
   public:
-    Moves() {}
-    Moves(const char* m) { parse(m); }
-    Moves& operator=(const char* m) { parse(m); return *this; }
+    UCIMoves() {}
+    UCIMoves(const char* m) { parse(m); }
+    UCIMoves& operator=(const char* m) { parse(m); return *this; }
 
     void clear() { m_.clear(); }
-    Moves& operator+=(const UCIMove& m) { m_.push_back(m); return *this; }
+    UCIMoves& operator+=(const UCIMove& m) { m_.push_back(m); return *this; }
 
     int length() const { return m_.size(); }
-    const UCIMove& last() const { return m_.back(); }
-    std::string uci() const;
+    std::string str() const;
 
     std::vector<UCIMove>::const_iterator begin() const { return m_.begin(); }
     std::vector<UCIMove>::const_iterator end()   const { return m_.end(); }

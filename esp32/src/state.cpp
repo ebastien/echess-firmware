@@ -11,13 +11,10 @@ void Machine::reset(const Board& b) {
   state_ = StateInit();
   footprint_ = Footprint();
   board_ = b;
-  moves_.clear();
 }
 
 void Machine::move(const Move& m) {
-  if (board_.doMove(m)) {
-    moves_.push_back(m);
-  }
+  board_.doMove(m);
 }
 
 bool Machine::isValid() const {
@@ -106,7 +103,8 @@ void Machine::transition(const Footprint& f) {
   }
 }
 
-void Machine::transition(const Moves& moves) {
+void Machine::transition(const UCIMoves& moves) {
+  // TODO: try to only play missing moves
   Board board;
   if (board.fromMoves(moves)) {
     board_ = board;
@@ -117,9 +115,9 @@ void Machine::transition(const Moves& moves) {
 
 std::string Machine::explain() const {
   return std::visit(visitor {
-    [](const StateInit&)     { return std::string("init"); },
-    [](const StateInvalid&)  { return std::string("invalid pos"); },
-    [](const StateWaiting&)  { return std::string("waiting..."); },
+    [](const StateInit&)     { return std::string("set position"); },
+    [](const StateInvalid&)  { return std::string("invalid move"); },
+    [](const StateWaiting&)  { return std::string("waiting ... "); },
     [](const StateMoving& s) { return std::string("moving ") + s.origin().terse(); },
     [](const StateCastling&) { return std::string("castling"); },
     [](const StateTaking&)   { return std::string("taking"); },

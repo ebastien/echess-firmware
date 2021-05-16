@@ -2,6 +2,7 @@
 #define _ECHESS_BOARD_H
 
 #include <array>
+#include <optional>
 
 #include "thc.h"
 
@@ -109,12 +110,13 @@ namespace echess {
 
   class Board {
     thc::ChessRules cr_;
+    std::vector<Move> moves_;
 
   public:
     Board() {}
     Board(const char* fen) { cr_.Forsyth(fen); }
 
-    bool fromMoves(const Moves& moves);
+    bool fromMoves(const UCIMoves& moves);
 
     PlayerPiece at(const Square& p) const { return PlayerPiece(cr_.squares[p.forsyth()]); }
     PlayerPiece operator[](const Square& p) const { return at(p); }
@@ -126,6 +128,11 @@ namespace echess {
     bool isOver() const { return situation() != Situation::ingame; }
 
     Situation situation() const;
+
+    int length() const { return moves_.size(); }
+    std::optional<Move> lastMove() const {
+      return moves_.empty() ? std::nullopt : std::make_optional(moves_.back());
+    }
 
     bool doMove(const Move& m);
 

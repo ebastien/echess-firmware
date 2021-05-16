@@ -52,21 +52,21 @@ bool Lichess::findGame() {
   return true;
 }
 
-bool Lichess::waitGameState(const int min) {
+std::optional<UCIMoves> Lichess::waitGameState(const int min) {
 
   if (!isGamePlaying()) {
-    return false;
+    return std::nullopt;
   }
   if (clientStream_.open(boardGameStreamURL(gameId_), token_) < 0) {
     clientStream_.close();
     Serial.println("unable to connect to streaming endpoint");
-    return false;
+    return std::nullopt;
   }
   Serial.println("connected to steaming endpoint");
 
   StaticJsonDocument<1024> doc;
   DeserializationError error(DeserializationError::Ok);
-  Moves moves;
+  UCIMoves moves;
 
   do {
     Serial.println("read...");
@@ -83,7 +83,7 @@ bool Lichess::waitGameState(const int min) {
       } else if (doc["type"] == "gameState") {
         moves = doc["moves"].as<const char*>();
       }
-      Serial.print("Moves: "); Serial.println(moves.uci().c_str());
+      Serial.print("Moves: "); Serial.println(moves.str().c_str());
     }
   }
   while (moves.length() <= min && !error);
@@ -92,18 +92,17 @@ bool Lichess::waitGameState(const int min) {
 
   if (error) {
     Serial.print("deserialization failed: "); Serial.println(error.c_str());
-    return false;
+    return std::nullopt;
   }
-  moves_ = moves;
-  return true;
+  return std::make_optional(moves);
 }
 
-bool Lichess::makeMove(const Move& m) {
+bool Lichess::makeMove(const UCIMove& m) {
   if (!isGamePlaying()) {
     return false;
   }
 
-  int err = clientPlay_.post(boardGameMoveURL(gameId_, m.uci().c_str()), token_);
+  int err = clientPlay_.post(boardGameMoveURL(gameId_, m.c_str()), token_);
 
   clientPlay_.close();
 
@@ -111,7 +110,6 @@ bool Lichess::makeMove(const Move& m) {
     Serial.println("unable to connect to move endpoint");
     return false;
   }
-  moves_ += m.uci();
   Serial.println("connected to move endpoint");
   return true;
 }
