@@ -64,11 +64,13 @@ namespace echess {
       delay(1000);
       lichess_.findGame();
     }
-    if (!lichess_.readGameState()) {
+    if (!lichess_.waitGameState(-1)) {
+      Serial.println("fatal: cannot read game state");
       while (true) { delay(100); }
     }
     Board board;
     if (!board.fromMoves(lichess_.moves())) {
+      Serial.println("fatal: cannot play initial moves");
       while (true) { delay(100); }
     }
     m_.reset(board);
@@ -79,20 +81,38 @@ namespace echess {
 
     display_.prepare();
     display_.print(m_.explain());
-    display_.print(m_.board());
+    display_.print(m_.footprint());
     display_.draw();
 
     buzzer_.beep();
   }
 
   void Main::loop() {
-    Footprint fp(m_.footprint());
 
-    scanner_.waitForInterrupt();
-    scanner_.debounce(fp);
-    scanner_.clearInterrupt();
+    if (m_.isReady() && m_.board().player() != lichess_.player()) {
 
-    m_.transition(fp);
+      auto move = m_.lastMove();
+      if (move) {
+        lichess_.makeMove(*move);
+      }
+
+      if (!lichess_.waitGameState(lichess_.moves().length())) {
+        Serial.println("warning: cannot read game state");
+        return;
+      }
+
+      m_.transition(lichess_.moves());
+
+    } else {
+
+      Footprint fp(m_.footprint());
+
+      scanner_.waitForInterrupt();
+      scanner_.debounce(fp);
+      scanner_.clearInterrupt();
+
+      m_.transition(fp);
+    }
 
     display_.prepare();
     display_.print(m_.explain());

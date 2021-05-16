@@ -11,6 +11,13 @@ void Machine::reset(const Board& b) {
   state_ = StateInit();
   footprint_ = Footprint();
   board_ = b;
+  moves_.clear();
+}
+
+void Machine::move(const Move& m) {
+  if (board_.doMove(m)) {
+    moves_.push_back(m);
+  }
 }
 
 bool Machine::isValid() const {
@@ -20,6 +27,13 @@ bool Machine::isValid() const {
     }
   }
   return true;
+}
+
+bool Machine::isReady() const {
+  return std::visit(visitor {
+    [](const StateWaiting&) { return true;  },
+    [](const State&)        { return false; },
+  }, state_);
 }
 
 void Machine::syncing() {
@@ -41,14 +55,15 @@ void Machine::waiting(const Change& c) {
 }
 
 void Machine::moving(const StateMoving& s, const Change& c) {
+  const auto uci = UCIMove(s.origin(), c.pos());
   if (c.dir() == Direction::placed) {
     // Placed
     if (s.origin() == c.pos()) {
       state_ = StateWaiting();
     } else {
-      auto m = board_.move(s.origin(), c.pos());
+      auto m = board_.move(uci);
       if (m.isValid()) {
-        board_.doMove(m);
+        move(m);
         if (m.isCastling()) {
           state_ = StateCastling();
         } else if (m.isEnPassant()) {
@@ -64,9 +79,9 @@ void Machine::moving(const StateMoving& s, const Change& c) {
     }
   } else {
     // Removed
-    auto m = board_.move(s.origin(), c.pos());
+    auto m = board_.move(uci);
     if (m.isValid() && m.isCapture()) {
-      board_.doMove(m);
+      move(m);
       state_ = StateTaking();
     } else {
       state_ = StateInvalid();
@@ -88,6 +103,15 @@ void Machine::transition(const Footprint& f) {
       [&](const StateInvalid&)  { syncing(); },
       [&](const StateOver&)     {}
     }, state_);
+  }
+}
+
+void Machine::transition(const Moves& moves) {
+  Board board;
+  if (board.fromMoves(moves)) {
+    board_ = board;
+    state_ = StateInit();
+    syncing();
   }
 }
 

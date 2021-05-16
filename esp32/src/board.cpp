@@ -3,11 +3,9 @@
 
 using namespace echess;
 
-Move Board::move(const Square& from, const Square& to) const {
-  char tm[5];
-  from.terse(tm); to.terse(tm + 2); tm[4] = 0;
+Move Board::move(const UCIMove& uci) const {
   Move m;
-  bool valid = m.m_.TerseIn(const_cast<thc::ChessRules*>(&cr_), tm);
+  bool valid = m.m_.TerseIn(const_cast<thc::ChessRules*>(&cr_), uci.c_str());
   if (!valid) {
     m.m_.Invalid();
   }
@@ -54,16 +52,9 @@ bool Board::doMove(const Move& m) {
   return true;
 }
 
-Move Board::move(const char* terse) const {
-  Square from(terse), to(terse+2);
-  return move(from, to);
-}
-
-bool Board::fromMoves(const char* moves) {
-  const int n = (strlen(moves) + 1) / 5;
-  for (int i = 0; i < n; ++i) {
-    const auto m = move(moves + i * 5);
-    if (!doMove(m)) {
+bool Board::fromMoves(const Moves& moves) {
+  for (const auto& m : moves) {
+    if (!doMove(move(m))) {
       return false;
     }
   }

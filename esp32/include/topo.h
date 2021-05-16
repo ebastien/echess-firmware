@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <iterator>
+#include <array>
+#include <vector>
 
 namespace echess {
 
@@ -29,6 +31,8 @@ namespace echess {
     uint8_t y() const { return 7 - l_ / 8; }
     uint8_t natural() const { return y() * 8 + x(); }
     uint8_t forsyth() const { return l_; }
+    char ax() const { return 'a' + x(); }
+    char ay() const { return '1' + y(); }
 
     void terse(char* t) const { t[0] = 'a' + x(); t[1] = '1' + y(); }
     std::string terse() const { char t[3] = {0}; terse(t); return std::string(t); }
@@ -64,6 +68,52 @@ namespace echess {
 
     Iterator begin() { return Iterator(0); }
     Iterator end()   { return Iterator(64); }
+  };
+
+  // struct UCISquare {
+  //   UCISquare(const Square& s) : s_({ s.ax(), s.ay(), '\0' }) {}
+
+  //   const char* c_str() const { return s_.data(); }
+
+  // private:
+  //   std::array<char, 3> s_;
+  // };
+
+  class UCIMove {
+    std::array<char, 6> m_;
+
+  public:
+    enum Promotion : uint8_t { queen = 0, rook, bishop, knight };
+
+    UCIMove(const char* m) : m_({ m[0], m[1], m[2], m[3], m[4] == ' ' ? '\0' : m[4], '\0' }) {}
+    UCIMove(const std::string& m) : UCIMove(m.c_str()) {}
+    UCIMove(const Square& from, const Square& to) : m_({ from.ax(), from.ay(), to.ax(), to.ay(), '\0', '\0' }) {}
+    UCIMove(const Square& from, const Square& to, const Promotion p);
+
+    Square from() const { return Square(m_.data()); }
+    Square to() const { return Square(m_.data() + 2); }
+    const char* c_str() const { return m_.data(); }
+  };
+
+  class Moves {
+    std::vector<UCIMove> m_;
+
+    void parse(const char* m);
+
+  public:
+    Moves() {}
+    Moves(const char* m) { parse(m); }
+    Moves& operator=(const char* m) { parse(m); return *this; }
+
+    void clear() { m_.clear(); }
+    Moves& operator+=(const UCIMove& m) { m_.push_back(m); return *this; }
+
+    int length() const { return m_.size(); }
+    const UCIMove& last() const { return m_.back(); }
+    std::string uci() const;
+
+    std::vector<UCIMove>::const_iterator begin() const { return m_.begin(); }
+    std::vector<UCIMove>::const_iterator end()   const { return m_.end(); }
   };
 }
 

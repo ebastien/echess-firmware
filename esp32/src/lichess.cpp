@@ -15,10 +15,14 @@ std::string Lichess::boardGameStreamURL(const gameid_t& gameId) {
 std::string Lichess::accountPlayingURL() {
   return "https://lichess.org/api/account/playing";
 }
+std::string Lichess::boardGameMoveURL(const gameid_t& gameId, const move_t& move) {
+  return std::string("https://lichess.org/api/board/game/") + gameId + std::string("/move/") + move;
+}
 
 bool Lichess::findGame() {
 
-  if (client_.open(accountPlayingURL(), token_) < 0) {
+  if (clientPlay_.open(accountPlayingURL(), token_) < 0) {
+    clientPlay_.close();
     Serial.println("unable to connect to playing endpoint");
     return false;
   }
@@ -27,7 +31,7 @@ bool Lichess::findGame() {
   StaticJsonDocument<768> doc;
   DeserializationError error(DeserializationError::Ok);
 
-  error = deserializeJson(doc, client_);
+  error = deserializeJson(doc, clientPlay_);
   if (error) {
     Serial.print("deserialization failed: "); Serial.println(error.c_str());
     return false;
@@ -48,12 +52,13 @@ bool Lichess::findGame() {
   return true;
 }
 
-bool Lichess::readGameState() {
+bool Lichess::waitGameState(const int min) {
 
   if (!isGamePlaying()) {
     return false;
   }
-  if (client_.open(boardGameStreamURL(gameId_), token_) < 0) {
+  if (clientStream_.open(boardGameStreamURL(gameId_), token_) < 0) {
+    clientStream_.close();
     Serial.println("unable to connect to streaming endpoint");
     return false;
   }
@@ -61,34 +66,52 @@ bool Lichess::readGameState() {
 
   StaticJsonDocument<1024> doc;
   DeserializationError error(DeserializationError::Ok);
-  gamestate_t newState(gameState_);
+  Moves moves;
 
-  while (newState == gameState_ && !error) {
-
+  do {
     Serial.println("read...");
 
-    error = deserializeJson(doc, client_);
-    while (error == DeserializationError::EmptyInput && client_.isConnected()) {
+    error = deserializeJson(doc, clientStream_);
+    while (error == DeserializationError::EmptyInput && clientStream_.isConnected()) {
       delay(1000);
-      error = deserializeJson(doc, client_);
+      error = deserializeJson(doc, clientStream_);
     }
 
     if (!error) {
       if (doc["type"] == "gameFull") {
-        newState = doc["state"]["moves"].as<gamestate_t>();
+        moves = doc["state"]["moves"].as<const char*>();
       } else if (doc["type"] == "gameState") {
-        newState = doc["moves"].as<gamestate_t>();
+        moves = doc["moves"].as<const char*>();
       }
-      Serial.print("Moves: "); Serial.println(newState.c_str());
+      Serial.print("Moves: "); Serial.println(moves.uci().c_str());
     }
   }
+  while (moves.length() <= min && !error);
+
+  clientStream_.close();
 
   if (error) {
     Serial.print("deserialization failed: "); Serial.println(error.c_str());
-  }
-  if (newState == gameState_) {
     return false;
   }
-  gameState_ = newState;
+  moves_ = moves;
+  return true;
+}
+
+bool Lichess::makeMove(const Move& m) {
+  if (!isGamePlaying()) {
+    return false;
+  }
+
+  int err = clientPlay_.post(boardGameMoveURL(gameId_, m.uci().c_str()), token_);
+
+  clientPlay_.close();
+
+  if (err < 0) {
+    Serial.println("unable to connect to move endpoint");
+    return false;
+  }
+  moves_ += m.uci();
+  Serial.println("connected to move endpoint");
   return true;
 }

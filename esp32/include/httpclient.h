@@ -16,11 +16,14 @@ namespace echess {
 
     static esp_err_t eventHandler(esp_http_client_event_t *evt);
 
+    int flush();
+
   public:
     HTTPClient(const std::string& url);
     ~HTTPClient();
 
     int open(const std::string& url, const std::string& token);
+    int post(const std::string& url, const std::string& token);
     void close();
     int read();
     size_t readBytes(char* buffer, size_t length);

@@ -10,20 +10,21 @@ namespace echess {
 
   struct Lichess {
     using gameid_t    = std::string;
-    using gamestate_t = std::string;
+    using move_t      = std::string;
 
   private:
     static std::string baseURL();
     static std::string boardGameStreamURL(const gameid_t& gameId);
     static std::string accountPlayingURL();
+    static std::string boardGameMoveURL(const gameid_t& gameId, const move_t& move);
 
     std::string token_;
-    HTTPClient client_;
+    HTTPClient clientStream_, clientPlay_;
     gameid_t gameId_;
-    gamestate_t gameState_;
     Player player_;
+    Moves moves_;
 
-    Lichess() : client_(baseURL()) { reset(); }
+    Lichess() : clientStream_(baseURL()), clientPlay_(baseURL()) { reset(); }
 
   public:
     Lichess(const Lichess&) = delete;
@@ -34,15 +35,16 @@ namespace echess {
       return instance;
     }
 
-    const char* moves() const { return gameState_.c_str(); }
+    const Moves& moves() const { return moves_; }
     Player player() const { return player_; }
 
     void setToken(const std::string& token) { token_ = token; }
-    void reset() { gameId_.clear(); gameState_.clear(); }
+    void reset() { gameId_.clear(); moves_.clear(); }
     bool isGamePlaying() const { return !gameId_.empty(); }
     bool findGame();
-    bool readGameState();
-    void close() { client_.close(); }
+    bool waitGameState(const int min);
+    bool makeMove(const Move& m);
+    void close() { clientStream_.close(); clientPlay_.close(); }
   };
 }
 
