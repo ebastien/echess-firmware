@@ -1,6 +1,8 @@
 #ifndef _ECHESS_POINTER_H
 #define _ECHESS_POINTER_H
 
+#include "topo.h"
+
 #include <Adafruit_MCP23017.h>
 
 namespace echess {
@@ -21,6 +23,10 @@ namespace echess {
       static Pointer instance;
       return instance;
     }
+
+    void point(const Square& s);
+    void clear();
+    void flash();
   };
 
 }

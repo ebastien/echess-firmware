@@ -10,8 +10,8 @@ Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE), row(0) {
 }
 
 void Display::prepare() {
-  row = 0;
   u8g2.clearBuffer();
+  row = 7;
 }
 
 void Display::draw() {
@@ -24,7 +24,7 @@ void Display::print(const char *msg) {
   u8g2.setFont(u8g2_font_5x7_tf);
   u8g2.setCursor(68, (row + 1) * 7);
   u8g2.print(msg);
-  row++;
+  --row;
 }
 
 void Display::print(const std::string& s) {

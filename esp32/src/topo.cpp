@@ -1,13 +1,16 @@
 #include "topo.h"
 
+#include <cstring>
+
 using namespace echess;
 
-void UCIMoves::parse(const char* m) {
+void UCIMoves::parse(const char* moves) {
   m_.clear();
-  for (const char* p = m; *p != '\0';) {
+  for (const char* p = moves; *p != '\0';) {
     if (*p == ' ') { ++p; continue; }
-    m_.push_back(UCIMove(p));
-    p += 4;
+    const UCIMove m(p);
+    m_.push_back(m);
+    p += strlen(m.c_str());
   }
 }
 

@@ -36,6 +36,7 @@ namespace echess {
       lichess_(Lichess::getInstance()),
       storage_(Storage::getInstance()) {}
 
+    void splash();
     void redraw();
 
   public:
@@ -54,6 +55,8 @@ namespace echess {
   void Main::setup() {
     Serial.begin(9600);
     delay(5);
+    buzzer_.beep();
+    splash();
 
     if (!storage_.initialize()) {
       while (true) { delay(100); }
@@ -88,6 +91,19 @@ namespace echess {
     buzzer_.beep();
   }
 
+  void Main::splash() {
+    display_.prepare();
+    display_.print("starting ...");
+    display_.draw();
+
+    for (auto p : Topo()) {
+      pointer_.point(p);
+      delay(100);
+    }
+
+    pointer_.flash();
+  }
+
   void Main::redraw() {
 
     const auto lastMove = m_.board().lastMove();
@@ -96,11 +112,19 @@ namespace echess {
 
     if (lastMove) {
       display_.print(lastMove->uci().c_str());
+
+      if (tick_ % 2 == 0) {
+        pointer_.point(lastMove->from());
+      } else {
+        pointer_.point(lastMove->to());
+      }
+    } else {
+      pointer_.clear();
     }
 
     display_.print(m_.explain());
 
-    if (tick_ % 2 == 0) {
+    if (tick_ % 4 == 0) {
       display_.print(m_.footprint());
     } else {
       display_.print(m_.board());
@@ -126,7 +150,9 @@ namespace echess {
       }
 
       m_.transition(*moves);
+
       buzzer_.beep();
+      pointer_.flash();
 
     } else {
 
@@ -135,8 +161,11 @@ namespace echess {
       if (scanner_.waitForInterrupt(1000)) {
         scanner_.debounce(fp);
         scanner_.clearInterrupt();
+        
         m_.transition(fp);
+
         buzzer_.beep();
+        pointer_.flash();
       }
     }
 

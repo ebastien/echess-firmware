@@ -28,7 +28,7 @@ bool Lichess::findGame() {
   }
   Serial.println("connected to playing endpoint");
 
-  StaticJsonDocument<768> doc;
+  DynamicJsonDocument doc(1024);;
   DeserializationError error(DeserializationError::Ok);
 
   error = deserializeJson(doc, clientPlay_);
@@ -64,7 +64,7 @@ std::optional<UCIMoves> Lichess::waitGameState(const int min) {
   }
   Serial.println("connected to steaming endpoint");
 
-  StaticJsonDocument<1024> doc;
+  DynamicJsonDocument doc(2048);
   DeserializationError error(DeserializationError::Ok);
   UCIMoves moves;
 
