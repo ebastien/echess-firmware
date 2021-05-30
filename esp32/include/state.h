@@ -22,7 +22,7 @@ namespace echess {
     Situation s_;
 
   public:
-    StateOver(const Situation& s) : s_(s) {}
+    explicit StateOver(const Situation& s) : s_(s) {}
 
     const Situation& situation() const { return s_; }
   };
@@ -31,7 +31,7 @@ namespace echess {
     Square origin_;
 
   public:
-    StateMoving(const Square& o) : origin_(o) {}
+    explicit StateMoving(const Square& o) : origin_(o) {}
 
     const Square& origin() const { return origin_; }
   };
@@ -43,19 +43,17 @@ namespace echess {
     State state_;
     Board board_;
 
-    void move(const Move& m);
-
     void waiting(const Change& c);
     void moving(const StateMoving& s, const Change& c);
     void syncing();
 
   public:
     Machine();
-    Machine(const Board& b) { reset(b); }
+    explicit Machine(const Board& b) { reset(b); }
 
     void reset(const Board& b);
-    void transition(const Footprint& f);
-    void transition(const UCIMoves& moves);
+    bool transition(const Footprint& f);
+    bool transition(const UCIMoves& moves);
 
     bool isValid() const;
     bool isReady() const;

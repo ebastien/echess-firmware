@@ -40,7 +40,7 @@ namespace echess {
     void reset() { gameId_.clear(); }
     bool isGamePlaying() const { return !gameId_.empty(); }
     bool findGame();
-    std::optional<UCIMoves> waitGameState(const int min = -1);
+    std::optional<UCIState> waitGameState(const int min = -1);
     bool makeMove(const UCIMove& m);
     void close() { clientStream_.close(); clientPlay_.close(); }
   };

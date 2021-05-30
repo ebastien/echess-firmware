@@ -13,10 +13,6 @@ void Machine::reset(const Board& b) {
   board_ = b;
 }
 
-void Machine::move(const Move& m) {
-  board_.doMove(m);
-}
-
 bool Machine::isValid() const {
   for (const auto p : Topo()) {
     if (footprint_[p] == board_.isEmpty(p)) {
@@ -60,7 +56,7 @@ void Machine::moving(const StateMoving& s, const Change& c) {
     } else {
       auto m = board_.move(uci);
       if (m.isValid()) {
-        move(m);
+        board_.doMove(m);
         if (m.isCastling()) {
           state_ = StateCastling();
         } else if (m.isEnPassant()) {
@@ -78,7 +74,7 @@ void Machine::moving(const StateMoving& s, const Change& c) {
     // Removed
     auto m = board_.move(uci);
     if (m.isValid() && m.isCapture()) {
-      move(m);
+      board_.doMove(m);
       state_ = StateTaking();
     } else {
       state_ = StateInvalid();
@@ -86,31 +82,46 @@ void Machine::moving(const StateMoving& s, const Change& c) {
   }
 }
 
-void Machine::transition(const Footprint& f) {
+bool Machine::transition(const Footprint& f) {
   auto cs = compare(footprint_, f);
   footprint_ = f;
-  if (!cs.empty()) {
-    std::visit(visitor {
-      [&](const StateInit&)     { syncing(); },
-      [&](const StateWaiting&)  { if (cs.size() == 1) { waiting(cs.front());   } else { state_ = StateInvalid(); } },
-      [&](const StateMoving& s) { if (cs.size() == 1) { moving(s, cs.front()); } else { state_ = StateInvalid(); } },
-      [&](const StateCastling&) { syncing(); },
-      [&](const StateTaking&)   { syncing(); },
-      [&](const StatePassant&)  { syncing(); },
-      [&](const StateInvalid&)  { syncing(); },
-      [&](const StateOver&)     {}
-    }, state_);
+  if (cs.empty()) {
+    return false;
   }
+  std::visit(visitor {
+    [&](const StateInit&)     { syncing(); },
+    [&](const StateWaiting&)  { if (cs.size() == 1) { waiting(cs.front());   } else { state_ = StateInvalid(); } },
+    [&](const StateMoving& s) { if (cs.size() == 1) { moving(s, cs.front()); } else { state_ = StateInvalid(); } },
+    [&](const StateCastling&) { syncing(); },
+    [&](const StateTaking&)   { syncing(); },
+    [&](const StatePassant&)  { syncing(); },
+    [&](const StateInvalid&)  { syncing(); },
+    [&](const StateOver&)     {}
+  }, state_);
+  return true;
 }
 
-void Machine::transition(const UCIMoves& moves) {
-  // TODO: try to only play missing moves
-  Board board;
-  if (board.fromMoves(moves)) {
-    board_ = board;
-    state_ = StateInit();
-    syncing();
+bool Machine::transition(const UCIMoves& moves) {
+  if (moves.length() < board_.length()) {
+    return false;
   }
+  int n = 0;
+  for (; n < board_.length(); ++n) {
+    const auto& m = board_.moveAt(n);
+    const auto& uci = moves.at(n);
+    if (m.uci() != uci && m.uci960() != uci) {
+      return false;
+    }
+  }
+  for (; n < moves.length(); ++n) {
+    const auto m = board_.move(moves.at(n));
+    if (!board_.doMove(m)) {
+      return false;
+    }
+  }
+  state_ = StateInit();
+  syncing();
+  return true;
 }
 
 std::string Machine::explain() const {

@@ -70,13 +70,13 @@ namespace echess {
       delay(1000);
       lichess_.findGame();
     }
-    const auto moves = lichess_.waitGameState();
-    if (!moves) {
+    const auto state = lichess_.waitGameState();
+    if (!state || state->initial().empty()) {
       Serial.println("fatal: cannot read game state");
       while (true) { delay(100); }
     }
-    Board board;
-    if (!board.fromMoves(*moves)) {
+    Board board(state->initial());
+    if (!board.fromMoves(state->moves())) {
       Serial.println("fatal: cannot play initial moves");
       while (true) { delay(100); }
     }
@@ -95,12 +95,6 @@ namespace echess {
     display_.prepare();
     display_.print("starting ...");
     display_.draw();
-
-    for (auto p : Topo()) {
-      pointer_.point(p);
-      delay(100);
-    }
-
     pointer_.flash();
   }
 
@@ -135,21 +129,21 @@ namespace echess {
 
   void Main::loop() {
 
+    const int nbMoves(m_.board().length());
+
     if (m_.isReady() && m_.board().player() != lichess_.player()) {
 
-      const auto lastMove = m_.board().lastMove();
-      if (lastMove) {
-        lichess_.makeMove(lastMove->uci());
-      }
+      const auto state = lichess_.waitGameState(nbMoves);
 
-      const auto moves = lichess_.waitGameState(m_.board().length());
-
-      if (!moves) {
+      if (!state) {
         Serial.println("warning: cannot read game state");
         return;
       }
 
-      m_.transition(*moves);
+      if (!m_.transition(state->moves())) {
+        Serial.println("fatal: cannot play moves");
+        while (true) { delay(100); }
+      }
 
       buzzer_.beep();
       pointer_.flash();
@@ -161,15 +155,24 @@ namespace echess {
       if (scanner_.waitForInterrupt(1000)) {
         scanner_.debounce(fp);
         scanner_.clearInterrupt();
-        
-        m_.transition(fp);
+
+        if (!m_.transition(fp)) {
+          Serial.println("fatal: cannot play move");
+          while (true) { delay(100); }
+        }
 
         buzzer_.beep();
         pointer_.flash();
       }
+
+      if (m_.board().length() > nbMoves) {
+        lichess_.makeMove(m_.board().lastMove()->uci());
+      }
     }
 
     redraw();
+
+    Serial.print("Free heap (kB): "); Serial.println(ESP.getFreeHeap() / 1024);
 
     ++tick_;
   }

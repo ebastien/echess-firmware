@@ -19,6 +19,10 @@ bool Storage::initialize() {
     Serial.println("SD card initialization failed");
     return false;
   }
+  if(SD.cardType() == CARD_NONE){
+    Serial.println("no SD card attached");
+    return false;
+  }
   if (!SD.exists(fname)) {
     Serial.println("no configuration file found");
     return false;

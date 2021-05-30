@@ -52,7 +52,7 @@ bool Lichess::findGame() {
   return true;
 }
 
-std::optional<UCIMoves> Lichess::waitGameState(const int min) {
+std::optional<UCIState> Lichess::waitGameState(const int min) {
 
   if (!isGamePlaying()) {
     return std::nullopt;
@@ -65,8 +65,14 @@ std::optional<UCIMoves> Lichess::waitGameState(const int min) {
   Serial.println("connected to steaming endpoint");
 
   DynamicJsonDocument doc(2048);
+  if (doc.capacity() == 0) {
+    clientStream_.close();
+    Serial.println("unable to allocate memory");
+    return std::nullopt;
+  }
   DeserializationError error(DeserializationError::Ok);
   UCIMoves moves;
+  const char* position(nullptr);
 
   do {
     Serial.println("read...");
@@ -79,6 +85,10 @@ std::optional<UCIMoves> Lichess::waitGameState(const int min) {
 
     if (!error) {
       if (doc["type"] == "gameFull") {
+        position = doc["initialFen"].as<const char*>();
+        if (position != nullptr && strcmp("startpos", position) == 0) {
+          position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        }
         moves = doc["state"]["moves"].as<const char*>();
       } else if (doc["type"] == "gameState") {
         moves = doc["moves"].as<const char*>();
@@ -94,7 +104,7 @@ std::optional<UCIMoves> Lichess::waitGameState(const int min) {
     Serial.print("deserialization failed: "); Serial.println(error.c_str());
     return std::nullopt;
   }
-  return std::make_optional(moves);
+  return std::make_optional(UCIState(position, moves));
 }
 
 bool Lichess::makeMove(const UCIMove& m) {

@@ -19,7 +19,7 @@ namespace echess {
     int flush();
 
   public:
-    HTTPClient(const std::string& url);
+    explicit HTTPClient(const std::string& url);
     ~HTTPClient();
 
     int open(const std::string& url, const std::string& token);

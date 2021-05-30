@@ -42,7 +42,7 @@ namespace echess {
     PlayerPiece(const PlayerPiece&) = default;
     PlayerPiece& operator=(const PlayerPiece&) = default;
 
-    PlayerPiece(const char c) {
+    explicit PlayerPiece(const char c) {
       switch (c) {
         case 'k': player_ = Player::black; piece_ = Piece::king;   break;
         case 'q': player_ = Player::black; piece_ = Piece::queen;  break;
@@ -101,6 +101,7 @@ namespace echess {
     Square from() const { return Square::fromForsyth(m_.src); }
     Square to() const { return Square::fromForsyth(m_.dst); }
     UCIMove uci() const { return UCIMove(const_cast<thc::Move&>(m_).TerseOut()); }
+    UCIMove uci960() const;
 
     bool isValid() const;
     bool isCastling() const;
@@ -112,9 +113,12 @@ namespace echess {
     thc::ChessRules cr_;
     std::vector<Move> moves_;
 
+    UCIMove fromChess960(const UCIMove& uci) const;
+
   public:
     Board() {}
-    Board(const char* fen) { cr_.Forsyth(fen); }
+    explicit Board(const char* fen) { cr_.Forsyth(fen); }
+    explicit Board(const std::string& fen) : Board(fen.c_str()) {}
 
     bool fromMoves(const UCIMoves& moves);
 
@@ -133,6 +137,7 @@ namespace echess {
     std::optional<Move> lastMove() const {
       return moves_.empty() ? std::nullopt : std::make_optional(moves_.back());
     }
+    const Move& moveAt(const int n) const { return moves_.at(n); }
 
     bool doMove(const Move& m);
 

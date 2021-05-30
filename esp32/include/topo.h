@@ -20,13 +20,14 @@ namespace echess {
         a1, b1, c1, d1, e1, f1, g1, h1
     };
 
-    Square(Label l) : l_(l) {}
+    explicit Square(Label l) : l_(l) {}
     Square(uint8_t x, uint8_t y) : l_(Label((7 - y) * 8 + x)) {}
-    Square(const char* n) : Square(n[0] - 'a', n[1] - '1') {}
+    explicit Square(const char* n) : Square(n[0] - 'a', n[1] - '1') {}
 
     friend bool operator==(const Square& a, const Square& b) { return a.l_ == b.l_; }
     friend bool operator!=(const Square& a, const Square& b) { return a.l_ != b.l_; }
 
+    Label label() const { return l_; }
     uint8_t x() const { return l_ % 8; }
     uint8_t y() const { return 7 - l_ / 8; }
     uint8_t natural() const { return y() * 8 + x(); }
@@ -76,8 +77,8 @@ namespace echess {
   public:
     enum Promotion : uint8_t { queen = 0, rook, bishop, knight };
 
-    UCIMove(const char* m) : m_({ m[0], m[1], m[2], m[3], m[4] == ' ' ? '\0' : m[4], '\0' }) {}
-    UCIMove(const std::string& m) : UCIMove(m.c_str()) {}
+    explicit UCIMove(const char* m) : m_({ m[0], m[1], m[2], m[3], m[4] == ' ' ? '\0' : m[4], '\0' }) {}
+    explicit UCIMove(const std::string& m) : UCIMove(m.c_str()) {}
     UCIMove(const Square& from, const Square& to) : m_({ from.ax(), from.ay(), to.ax(), to.ay(), '\0', '\0' }) {}
     UCIMove(const Square& from, const Square& to, const Promotion p);
 
@@ -96,7 +97,7 @@ namespace echess {
 
   public:
     UCIMoves() {}
-    UCIMoves(const char* m) { parse(m); }
+    explicit UCIMoves(const char* m) { parse(m); }
     UCIMoves& operator=(const char* m) { parse(m); return *this; }
 
     void clear() { m_.clear(); }
@@ -104,9 +105,22 @@ namespace echess {
 
     int length() const { return m_.size(); }
     std::string str() const;
+    const UCIMove& at(const int n) const { return m_.at(n); }
+    const UCIMove& operator[](const int n) const { return at(n); }
 
     std::vector<UCIMove>::const_iterator begin() const { return m_.begin(); }
     std::vector<UCIMove>::const_iterator end()   const { return m_.end(); }
+  };
+
+  class UCIState {
+    std::string fen_;
+    UCIMoves m_;
+
+  public:
+    UCIState(const char* fen, const UCIMoves& moves);
+
+    const std::string& initial() const { return fen_; }
+    const UCIMoves& moves() const { return m_; }
   };
 }
 

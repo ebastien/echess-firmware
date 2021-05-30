@@ -3,15 +3,6 @@
 
 using namespace echess;
 
-Move Board::move(const UCIMove& uci) const {
-  Move m;
-  bool valid = m.m_.TerseIn(const_cast<thc::ChessRules*>(&cr_), uci.c_str());
-  if (!valid) {
-    m.m_.Invalid();
-  }
-  return m;
-}
-
 bool Move::isValid() const {
   return m_.Valid();
 }
@@ -30,6 +21,40 @@ bool Move::isEnPassant() const {
 
 bool Move::isCapture() const {
   return m_.capture != ' ';
+}
+
+UCIMove Move::uci960() const {
+  UCIMove m(uci());
+  if (isCastling()) {
+    if (m == UCIMove("e1g1")) return UCIMove("e1h1");
+    if (m == UCIMove("e1c1")) return UCIMove("e1a1");
+    if (m == UCIMove("e8g8")) return UCIMove("e8h8");
+    if (m == UCIMove("e8c8")) return UCIMove("e8a8");
+  }
+  return m;
+}
+
+UCIMove Board::fromChess960(const UCIMove& uci) const {
+  const PlayerPiece p = at(uci.from());
+  if (p.piece_ == Piece::king) {
+    if (p.player_ == Player::white) {
+      if (uci == UCIMove("e1h1")) return UCIMove("e1g1");
+      if (uci == UCIMove("e1a1")) return UCIMove("e1c1");
+    } else {
+      if (uci == UCIMove("e8h8")) return UCIMove("e8g8");
+      if (uci == UCIMove("e8a8")) return UCIMove("e8c8");
+    }
+  }
+  return uci;
+}
+
+Move Board::move(const UCIMove& uci) const {
+  Move m;
+  bool valid = m.m_.TerseIn(const_cast<thc::ChessRules*>(&cr_), fromChess960(uci).c_str());
+  if (!valid) {
+    m.m_.Invalid();
+  }
+  return m;
 }
 
 Situation Board::situation() const {
