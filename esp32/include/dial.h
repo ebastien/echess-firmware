@@ -9,10 +9,20 @@ namespace echess {
     static const uint8_t gpioRotButton = 27;
     static const uint8_t gpioRotA = 25;
     static const uint8_t gpioRotB = 26;
+    static const unsigned long c_bouncingClearance = 5000; // 5ms
 
-    ESP32Encoder encoder;
+    static volatile bool awakenByInterrupt;
+    static void interruptCallback();
+
+    ESP32Encoder encoder_;
+    int size_;
+    int position_;
 
     Dial();
+
+    void clearInterrupt();
+    int32_t count();
+    bool button();
 
   public:
     Dial(const Dial&) = delete;
@@ -23,7 +33,9 @@ namespace echess {
       return instance;
     }
 
-    int32_t count();
+    void init(const int size);
+    bool wait(const unsigned long timeout);
+    int position() const { return position_; }
   };
 
 }
