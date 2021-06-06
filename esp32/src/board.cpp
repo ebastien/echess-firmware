@@ -7,6 +7,13 @@ bool Move::isValid() const {
   return m_.Valid();
 }
 
+bool Move::isPromotion() const {
+  return m_.special == thc::SPECIAL_PROMOTION_QUEEN ||
+         m_.special == thc::SPECIAL_PROMOTION_ROOK ||
+         m_.special == thc::SPECIAL_PROMOTION_BISHOP ||
+         m_.special == thc::SPECIAL_PROMOTION_KNIGHT;
+}
+
 bool Move::isCastling() const {
   return m_.special == thc::SPECIAL_WK_CASTLING ||
          m_.special == thc::SPECIAL_BK_CASTLING ||

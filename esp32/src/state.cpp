@@ -29,6 +29,20 @@ bool Machine::isReady() const {
   }, state_);
 }
 
+bool Machine::isError() const {
+  return std::visit(visitor {
+    [](const StateInvalid&) { return true;  },
+    [](const State&)        { return false; },
+  }, state_);
+}
+
+bool Machine::isPromotion() const {
+  return std::visit(visitor {
+    [](const StatePickPromotion&) { return true;  },
+    [](const State&)              { return false; },
+  }, state_);
+}
+
 void Machine::syncing() {
   if (isValid()) {
     if (board_.isOver()) {
@@ -47,24 +61,45 @@ void Machine::waiting(const Change& c) {
   }
 }
 
+void Machine::promoting(const StatePickPromotion& s, const UCIMove::Promotion p) {
+  const UCIMove uci(s.from(), s.to(), p);
+  const auto m = board_.move(uci);
+  if (m.isValid()) {
+    board_.doMove(m);
+    if (isValid()) {
+      state_ = StateWaiting();
+    } else {
+      state_ = StatePromoting();
+    }
+  } else {
+    state_ = StateInvalid();
+  }
+}
+
 void Machine::moving(const StateMoving& s, const Change& c) {
-  const auto uci = UCIMove(s.origin(), c.pos());
+
+  const UCIMove uci(s.origin(), c.pos());
+
   if (c.dir() == Direction::placed) {
     // Placed
     if (s.origin() == c.pos()) {
       state_ = StateWaiting();
     } else {
-      auto m = board_.move(uci);
+      const auto m = board_.move(uci);
       if (m.isValid()) {
-        board_.doMove(m);
-        if (m.isCastling()) {
-          state_ = StateCastling();
-        } else if (m.isEnPassant()) {
-          state_ = StatePassant();
-        } else if (board_.isOver()) {
-          state_ = StateOver(board_.situation());
+        if (m.isPromotion()) {
+          state_ = StatePickPromotion(s.origin(), c.pos());
         } else {
-          state_ = StateWaiting();
+          board_.doMove(m);
+          if (m.isCastling()) {
+            state_ = StateCastling();
+          } else if (m.isEnPassant()) {
+            state_ = StatePassant();
+          } else if (board_.isOver()) {
+            state_ = StateOver(board_.situation());
+          } else {
+            state_ = StateWaiting();
+          }
         }
       } else {
         state_ = StateInvalid();
@@ -72,10 +107,14 @@ void Machine::moving(const StateMoving& s, const Change& c) {
     }
   } else {
     // Removed
-    auto m = board_.move(uci);
+    const auto m = board_.move(uci);
     if (m.isValid() && m.isCapture()) {
-      board_.doMove(m);
-      state_ = StateTaking();
+      if (m.isPromotion()) {
+        state_ = StatePickPromotion(s.origin(), c.pos());
+      } else {
+        board_.doMove(m);
+        state_ = StateTaking();
+      }
     } else {
       state_ = StateInvalid();
     }
@@ -85,20 +124,41 @@ void Machine::moving(const StateMoving& s, const Change& c) {
 bool Machine::transition(const Footprint& f) {
   auto cs = compare(footprint_, f);
   footprint_ = f;
-  if (cs.empty()) {
-    return false;
-  }
   std::visit(visitor {
-    [&](const StateInit&)     { syncing(); },
-    [&](const StateWaiting&)  { if (cs.size() == 1) { waiting(cs.front());   } else { state_ = StateInvalid(); } },
-    [&](const StateMoving& s) { if (cs.size() == 1) { moving(s, cs.front()); } else { state_ = StateInvalid(); } },
-    [&](const StateCastling&) { syncing(); },
-    [&](const StateTaking&)   { syncing(); },
-    [&](const StatePassant&)  { syncing(); },
-    [&](const StateInvalid&)  { syncing(); },
-    [&](const StateOver&)     {}
+    [&](const StateInit&)        { syncing(); },
+    [&](const StateWaiting&)     {
+      if (!cs.empty()) {
+        if (cs.size() == 1) {
+          waiting(cs.front());
+        } else {
+          state_ = StateInvalid();
+        }
+      }
+    },
+    [&](const StateMoving& s)    {
+      if (!cs.empty()) {
+        if (cs.size() == 1) {
+          moving(s, cs.front());
+        } else {
+          state_ = StateInvalid();
+        }
+      }
+    },
+    [&](const StatePromoting&)   { syncing(); },
+    [&](const StateCastling&)    { syncing(); },
+    [&](const StateTaking&)      { syncing(); },
+    [&](const StatePassant&)     { syncing(); },
+    [&](const StateInvalid&)     { syncing(); },
+    [&](const State&)            {}
   }, state_);
   return true;
+}
+
+bool Machine::transition(const UCIMove::Promotion p) {
+  return std::visit(visitor {
+    [&](const StatePickPromotion& s) { promoting(s, p); return true; },
+    [&](const State&)                {                  return false; }
+  }, state_);
 }
 
 bool Machine::transition(const UCIMoves& moves) {
@@ -126,13 +186,15 @@ bool Machine::transition(const UCIMoves& moves) {
 
 std::string Machine::explain() const {
   return std::visit(visitor {
-    [](const StateInit&)     { return std::string("set position"); },
-    [](const StateInvalid&)  { return std::string("invalid move"); },
-    [](const StateWaiting&)  { return std::string("waiting ... "); },
-    [](const StateMoving& s) { return std::string("moving ") + s.origin().terse(); },
-    [](const StateCastling&) { return std::string("castling"); },
-    [](const StateTaking&)   { return std::string("taking"); },
-    [](const StatePassant&)  { return std::string("en passant"); },
+    [](const StateInit&)          { return std::string("set position"); },
+    [](const StateInvalid&)       { return std::string("invalid move"); },
+    [](const StateWaiting&)       { return std::string("waiting ... "); },
+    [](const StateMoving& s)      { return std::string("moving ") + s.origin().terse(); },
+    [](const StateCastling&)      { return std::string("castling"); },
+    [](const StateTaking&)        { return std::string("taking"); },
+    [](const StatePassant&)       { return std::string("en passant"); },
+    [](const StatePickPromotion&) { return std::string("ask promotion"); },
+    [](const StatePromoting&)     { return std::string("promoting"); },
     [](const StateOver& s)   {
       switch (s.situation()) {
         case Situation::blackCheckMate: return std::string("black mate");

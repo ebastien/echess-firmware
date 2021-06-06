@@ -88,6 +88,9 @@ namespace echess {
 
     Scanner();
 
+    void clearInterrupt();
+    void debounce(Footprint& fp);
+
   public:
     Scanner(const Scanner&) = delete;
     Scanner& operator=(const Scanner&) = delete;
@@ -97,10 +100,8 @@ namespace echess {
       return instance;
     }
 
-    bool waitForInterrupt(const unsigned long timeout = 0);
-    void clearInterrupt();
+    bool wait(Footprint& fp, const unsigned long timeout = 0);
     bool read(Footprint& fp);
-    void debounce(Footprint& fp);
   };
 
 }

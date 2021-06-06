@@ -80,7 +80,14 @@ namespace echess {
     explicit UCIMove(const char* m) : m_({ m[0], m[1], m[2], m[3], m[4] == ' ' ? '\0' : m[4], '\0' }) {}
     explicit UCIMove(const std::string& m) : UCIMove(m.c_str()) {}
     UCIMove(const Square& from, const Square& to) : m_({ from.ax(), from.ay(), to.ax(), to.ay(), '\0', '\0' }) {}
-    UCIMove(const Square& from, const Square& to, const Promotion p);
+    UCIMove(const Square& from, const Square& to, const Promotion p) : UCIMove(from, to) {
+      switch (p) {
+        case queen:  m_[4] = 'q'; break;
+        case rook:   m_[4] = 'r'; break;
+        case bishop: m_[4] = 'b'; break;
+        case knight: m_[4] = 'n';
+      }
+    }
 
     Square from() const { return Square(m_.data()); }
     Square to() const { return Square(m_.data() + 2); }

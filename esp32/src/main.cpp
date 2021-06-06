@@ -1,182 +1,192 @@
-#include <Arduino.h>
 
-#include "board.h"
-#include "footprint.h"
-#include "pointer.h"
-#include "dial.h"
-#include "display.h"
-#include "buzzer.h"
-#include "state.h"
-#include "remote.h"
-#include "lichess.h"
-#include "storage.h"
+#include "main.h"
 
-namespace echess {
+#include <array>
 
-  class Main {
-    Display& display_;
-    Scanner& scanner_;
-    Pointer& pointer_;
-    Dial& dial_;
-    Buzzer& buzzer_;
-    Remote& remote_;
-    Lichess& lichess_;
-    Storage& storage_;
+using namespace echess;
 
-    Machine m_;
-    unsigned long tick_ = 0;
+void Main::fatal(const char* msg) {
+  buzzer_.error();
+  display_.prepare();
+  display_.print("to reset ...");
+  display_.print("press button");
+  display_.print(msg);
+  display_.draw();
+  pointer_.flash();
+  dial_.init(0);
+  while (!dial_.wait(1000)) { delay(10); }
+  reset();
+}
 
-    Main() :
-      display_(Display::getInstance()),
-      scanner_(Scanner::getInstance()),
-      pointer_(Pointer::getInstance()),
-      dial_(Dial::getInstance()),
-      buzzer_(Buzzer::getInstance()),
-      remote_(Remote::getInstance()),
-      lichess_(Lichess::getInstance()),
-      storage_(Storage::getInstance()) {}
+void Main::reset() {
+  ESP.restart();
+}
 
-    void splash();
-    void redraw();
+void Main::setup() {
+  Serial.begin(9600);
+  delay(1000);
+  splash();
 
-  public:
-    Main(const Main&) = delete;
-    Main& operator=(const Main&) = delete;
+  if (!storage_.initialize()) {
+    fatal("no SD");
+  }
 
-    static Main& getInstance() {
-      static Main instance;
-      return instance;
-    }
+  remote_.connect(storage_.ssid(), storage_.password());
 
-    void setup();
-    void loop();
-  };
-
-  void Main::setup() {
-    Serial.begin(9600);
-    delay(5);
-    buzzer_.beep();
-    splash();
-
-    if (!storage_.initialize()) {
-      while (true) { delay(100); }
-    }
-
-    remote_.connect(storage_.ssid(), storage_.password());
-
-    lichess_.setToken(storage_.lichessKey());
+  lichess_.setToken(storage_.lichessKey());
+  lichess_.findGame();
+  while (!lichess_.isGamePlaying()) {
+    display_.prepare();
+    display_.print("a game ...");
+    display_.print("waiting for");
+    display_.draw();
+    delay(1000);
     lichess_.findGame();
-    while (!lichess_.isGamePlaying()) {
-      delay(1000);
-      lichess_.findGame();
-    }
-    const auto state = lichess_.waitGameState();
-    if (!state || state->initial().empty()) {
-      Serial.println("fatal: cannot read game state");
-      while (true) { delay(100); }
-    }
-    Board board(state->initial());
-    if (!board.fromMoves(state->moves())) {
-      Serial.println("fatal: cannot play initial moves");
-      while (true) { delay(100); }
-    }
-    m_.reset(board);
+  }
+  const auto state = lichess_.waitGameState();
+  if (!state || state->initial().empty()) {
+    fatal("remote error");
+  }
+  Board board(state->initial());
+  if (!board.fromMoves(state->moves())) {
+    fatal("remote error");
+  }
+  m_.reset(board);
 
-    Footprint fp;
-    scanner_.read(fp);
-    m_.transition(fp);
+  Footprint fp;
+  scanner_.read(fp);
+  m_.transition(fp);
 
-    redraw();
+  redraw();
 
+  buzzer_.beep();
+}
+
+void Main::splash() {
+  buzzer_.beep();
+  display_.prepare();
+  display_.print("starting ...");
+  display_.draw();
+  pointer_.flash();
+}
+
+void Main::notify(bool error) {
+  if (error) {
+    buzzer_.error();
+  } else {
     buzzer_.beep();
   }
+  pointer_.flash();
+}
 
-  void Main::splash() {
-    display_.prepare();
-    display_.print("starting ...");
-    display_.draw();
-    pointer_.flash();
+void Main::redraw() {
+
+  const auto lastMove = m_.board().lastMove();
+
+  display_.prepare();
+
+  if (lastMove) {
+    display_.print(lastMove->uci().c_str());
+
+    if (tick_ % 2 == 0) {
+      pointer_.point(lastMove->from());
+    } else {
+      pointer_.point(lastMove->to());
+    }
+  } else {
+    pointer_.clear();
   }
 
-  void Main::redraw() {
+  display_.print(m_.explain());
 
-    const auto lastMove = m_.board().lastMove();
-
-    display_.prepare();
-
-    if (lastMove) {
-      display_.print(lastMove->uci().c_str());
-
-      if (tick_ % 2 == 0) {
-        pointer_.point(lastMove->from());
-      } else {
-        pointer_.point(lastMove->to());
-      }
-    } else {
-      pointer_.clear();
-    }
-
-    display_.print(m_.explain());
-
-    if (tick_ % 4 == 0) {
-      display_.print(m_.footprint());
-    } else {
-      display_.print(m_.board());
-    }
-
-    display_.draw();
+  if (tick_ % 4 == 0) {
+    display_.print(m_.footprint());
+  } else {
+    display_.print(m_.board());
   }
 
-  void Main::loop() {
+  display_.draw();
+}
 
-    const int nbMoves(m_.board().length());
+const char* Main::showPromotion(UCIMove::Promotion p) {
+  switch (p) {
+    case UCIMove::queen:  return "queen";
+    case UCIMove::rook:   return "rook";
+    case UCIMove::bishop: return "bishop";
+    case UCIMove::knight: return "knight";
+  }
+  return "";
+}
 
-    if (m_.isReady() && m_.board().player() != lichess_.player()) {
+UCIMove::Promotion Main::askPromotion() {
 
-      const auto state = lichess_.waitGameState(nbMoves);
+  static const std::array<UCIMove::Promotion, 4> pieces(
+    {UCIMove::queen, UCIMove::rook, UCIMove::bishop, UCIMove::knight}
+  );
 
-      if (!state) {
-        Serial.println("warning: cannot read game state");
-        return;
+  UCIMove::Promotion choice(pieces[0]);
+
+  dial_.init(pieces.size() - 1);
+  do {
+    choice = pieces[dial_.position()];
+    display_.prepare();
+    display_.print(showPromotion(choice));
+    display_.draw();
+  } while (!dial_.wait(1000));
+
+  display_.prepare();
+  display_.draw();
+  notify();
+
+  return choice;
+}
+
+void Main::loop() {
+
+  const int nbMoves(m_.board().length());
+
+  if (m_.isReady() && m_.board().player() != lichess_.player()) {
+
+    const auto state = lichess_.waitGameState(nbMoves);
+
+    if (!state) {
+      fatal("remote error");
+    }
+    if (!m_.transition(state->moves())) {
+      fatal("remote error");
+    }
+
+    notify();
+
+  } else {
+
+    Footprint fp(m_.footprint());
+
+    if (scanner_.wait(fp, 1000)) {
+      if (!m_.transition(fp)) {
+        fatal("local error");
       }
 
-      if (!m_.transition(state->moves())) {
-        Serial.println("fatal: cannot play moves");
-        while (true) { delay(100); }
-      }
+      notify(m_.isError());
 
-      buzzer_.beep();
-      pointer_.flash();
-
-    } else {
-
-      Footprint fp(m_.footprint());
-
-      if (scanner_.waitForInterrupt(1000)) {
-        scanner_.debounce(fp);
-        scanner_.clearInterrupt();
-
-        if (!m_.transition(fp)) {
-          Serial.println("fatal: cannot play move");
-          while (true) { delay(100); }
+      if (m_.isPromotion()) {
+        const auto p = askPromotion();
+        if (!m_.transition(p)) {
+          fatal("local error");
         }
-
-        buzzer_.beep();
-        pointer_.flash();
-      }
-
-      if (m_.board().length() > nbMoves) {
-        lichess_.makeMove(m_.board().lastMove()->uci());
       }
     }
 
-    redraw();
-
-    Serial.print("Free heap (kB): "); Serial.println(ESP.getFreeHeap() / 1024);
-
-    ++tick_;
+    if (m_.board().length() > nbMoves) {
+      lichess_.makeMove(m_.board().lastMove()->uci());
+    }
   }
 
+  redraw();
+
+  // Serial.print("Free heap (kB): "); Serial.println(ESP.getFreeHeap() / 1024);
+
+  ++tick_;
 }
 
 void setup() {

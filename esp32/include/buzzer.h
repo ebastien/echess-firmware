@@ -20,7 +20,9 @@ namespace echess {
       return instance;
     }
 
+    void tune(double freq, uint32_t duration) const;
     void beep() const;
+    void error() const;
   };
 
 }

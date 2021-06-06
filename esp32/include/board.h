@@ -104,6 +104,7 @@ namespace echess {
     UCIMove uci960() const;
 
     bool isValid() const;
+    bool isPromotion() const;
     bool isCastling() const;
     bool isEnPassant() const;
     bool isCapture() const;

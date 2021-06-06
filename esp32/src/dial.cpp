@@ -12,13 +12,13 @@ void Dial::clearInterrupt() {
   awakenByInterrupt = false;
 }
 
-Dial::Dial() : size_(0), position_(0) {
-  pinMode(gpioRotButton, INPUT_PULLUP);
+Dial::Dial() : max_(0), position_(0) {
+  pinMode(c_gpioRotButton, INPUT_PULLUP);
   awakenByInterrupt = false;
-  attachInterrupt(gpioRotButton, interruptCallback, FALLING);
+  attachInterrupt(c_gpioRotButton, interruptCallback, FALLING);
 
   ESP32Encoder::useInternalWeakPullResistors = UP;
-  encoder_.attachSingleEdge(gpioRotA, gpioRotB);
+  encoder_.attachSingleEdge(c_gpioRotA, c_gpioRotB);
   encoder_.setCount(0);
 }
 
@@ -28,9 +28,9 @@ int32_t Dial::count() {
 
 bool Dial::button() {
   unsigned long lastChange = micros();
-  int lastValue = digitalRead(gpioRotButton);
+  int lastValue = digitalRead(c_gpioRotButton);
   while (micros() - lastChange < c_bouncingClearance) {
-    int v = digitalRead(gpioRotButton);
+    int v = digitalRead(c_gpioRotButton);
     if (v != lastValue) {
       lastChange = micros();
       lastValue = v;
@@ -39,8 +39,8 @@ bool Dial::button() {
   return lastValue == 0;
 }
 
-void Dial::init(const int size) {
-  size_ = size;
+void Dial::init(const int max) {
+  max_ = max;
   position_ = 0;
 }
 
@@ -62,7 +62,7 @@ bool Dial::wait(const unsigned long timeout) {
     clearInterrupt();
   }
 
-  if      (turn > 0) position_ = min(position_ + 1, size_);
+  if      (turn > 0) position_ = min(position_ + 1, max_);
   else if (turn < 0) position_ = max(position_ - 1, 0);
 
   return press;
