@@ -3,7 +3,7 @@
 
 using namespace echess;
 
-Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE), row(0) {
+Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE) {
   u8g2.begin();
   u8g2.clearBuffer();
   u8g2.sendBuffer();
@@ -11,7 +11,6 @@ Display::Display() : u8g2(U8G2_R0, U8X8_PIN_NONE), row(0) {
 
 void Display::prepare() {
   u8g2.clearBuffer();
-  row = 7;
 }
 
 void Display::draw() {
@@ -21,10 +20,9 @@ void Display::draw() {
 void Display::print(const char *msg) {
   u8g2.setDrawColor(1);
   u8g2.setFontMode(0);
-  u8g2.setFont(u8g2_font_5x7_tf);
-  u8g2.setCursor(68, (row + 1) * 7);
+  u8g2.setFont(u8g2_font_8x13_tf);
+  u8g2.setCursor(0, 22);
   u8g2.print(msg);
-  --row;
 }
 
 void Display::print(const std::string& s) {
@@ -42,7 +40,7 @@ void Display::print(const Footprint& board) {
   const u8g2_uint_t boardDim = 8 * squareDim;
 
   for (auto p : Topo()) {
-    const u8g2_uint_t xs = p.x() * squareDim;
+    const u8g2_uint_t xs = boardDim + p.x() * squareDim;
     const u8g2_uint_t ys = boardDim - (p.y() + 1) * squareDim;
     const uint8_t bgColor = (p.x() + p.y()) % 2;
     const uint8_t fgColor = (bgColor + 1) % 2;
@@ -55,6 +53,8 @@ void Display::print(const Footprint& board) {
       u8g2.drawDisc(xs + squareDim/2, ys + squareDim/2, squareDim/4);
     }
   }
+  u8g2.setDrawColor(0);
+  u8g2.drawLine(64, 0, 64, 63);
 }
 
 void Display::print(const Board& board) {
@@ -79,4 +79,29 @@ void Display::print(const Board& board) {
       u8g2.print(pp.symbol());
     }
   }
+  u8g2.setDrawColor(1);
+  u8g2.drawLine(63, 0, 63, 63);
+}
+
+void Display::print(const UCIMove& move) {
+  u8g2.setDrawColor(1);
+  u8g2.setFontMode(0);
+  u8g2.setFont(u8g2_font_10x20_tf);
+  u8g2.setCursor(68, 22);
+  u8g2.print(move.c_str());
+}
+
+void Display::print(const UCIMove::Promotion p) {
+  const char* txt = "";
+  switch (p) {
+    case UCIMove::queen:  txt = "Queen?";  break;
+    case UCIMove::rook:   txt = "Rook?";   break;
+    case UCIMove::bishop: txt = "Bishop?"; break;
+    case UCIMove::knight: txt = "Knight?";
+  }
+  u8g2.setDrawColor(1);
+  u8g2.setFontMode(0);
+  u8g2.setFont(u8g2_font_10x20_tf);
+  u8g2.setCursor(32, 40);
+  u8g2.print(txt);
 }

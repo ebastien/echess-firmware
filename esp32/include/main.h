@@ -45,7 +45,6 @@ namespace echess {
     void fatal(const char* msg);
     void notify(bool error = false);
 
-    static const char* showPromotion(UCIMove::Promotion p);
     UCIMove::Promotion askPromotion();
 
   public:

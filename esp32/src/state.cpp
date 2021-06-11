@@ -188,7 +188,7 @@ std::string Machine::explain() const {
   return std::visit(visitor {
     [](const StateInit&)          { return std::string("set position"); },
     [](const StateInvalid&)       { return std::string("invalid move"); },
-    [](const StateWaiting&)       { return std::string("waiting ... "); },
+    [](const StateWaiting&)       { return std::string("waiting for move"); },
     [](const StateMoving& s)      { return std::string("moving ") + s.origin().terse(); },
     [](const StateCastling&)      { return std::string("castling"); },
     [](const StateTaking&)        { return std::string("taking"); },
@@ -197,10 +197,10 @@ std::string Machine::explain() const {
     [](const StatePromoting&)     { return std::string("promoting"); },
     [](const StateOver& s)   {
       switch (s.situation()) {
-        case Situation::blackCheckMate: return std::string("black mate");
-        case Situation::whiteCheckMate: return std::string("white mate");
-        case Situation::blackStaleMate: return std::string("black stale");
-        case Situation::whiteStaleMate: return std::string("white stale");
+        case Situation::blackCheckMate: return std::string("black checkmate");
+        case Situation::whiteCheckMate: return std::string("white checkmate");
+        case Situation::blackStaleMate: return std::string("black stalemate");
+        case Situation::whiteStaleMate: return std::string("white stalemate");
         default:                        return std::string("game over");
       }
     }

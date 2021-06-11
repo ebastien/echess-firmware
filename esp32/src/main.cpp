@@ -6,15 +6,21 @@
 using namespace echess;
 
 void Main::fatal(const char* msg) {
+  unsigned long tick = 0;
   buzzer_.error();
-  display_.prepare();
-  display_.print("to reset ...");
-  display_.print("press button");
-  display_.print(msg);
-  display_.draw();
   pointer_.flash();
   dial_.init(0);
-  while (!dial_.wait(1000)) { delay(10); }
+  do {
+    display_.prepare();
+    switch (tick % 3) {
+      case 0 : display_.print(msg); break;
+      case 1 : display_.print("press button"); break;
+      case 2 : display_.print("to reset");
+    }
+    display_.draw();
+    ++tick;
+  }
+  while (!dial_.wait(1000));
   reset();
 }
 
@@ -37,8 +43,7 @@ void Main::setup() {
   lichess_.findGame();
   while (!lichess_.isGamePlaying()) {
     display_.prepare();
-    display_.print("a game ...");
-    display_.print("waiting for");
+    display_.print("waiting for game");
     display_.draw();
     delay(1000);
     lichess_.findGame();
@@ -86,8 +91,6 @@ void Main::redraw() {
   display_.prepare();
 
   if (lastMove) {
-    display_.print(lastMove->uci().c_str());
-
     if (tick_ % 2 == 0) {
       pointer_.point(lastMove->from());
     } else {
@@ -97,25 +100,14 @@ void Main::redraw() {
     pointer_.clear();
   }
 
-  display_.print(m_.explain());
-
   if (tick_ % 4 == 0) {
-    display_.print(m_.footprint());
+    display_.print(m_.explain());
   } else {
+    display_.print(m_.footprint());
     display_.print(m_.board());
   }
 
   display_.draw();
-}
-
-const char* Main::showPromotion(UCIMove::Promotion p) {
-  switch (p) {
-    case UCIMove::queen:  return "queen";
-    case UCIMove::rook:   return "rook";
-    case UCIMove::bishop: return "bishop";
-    case UCIMove::knight: return "knight";
-  }
-  return "";
 }
 
 UCIMove::Promotion Main::askPromotion() {
@@ -130,7 +122,7 @@ UCIMove::Promotion Main::askPromotion() {
   do {
     choice = pieces[dial_.position()];
     display_.prepare();
-    display_.print(showPromotion(choice));
+    display_.print(choice);
     display_.draw();
   } while (!dial_.wait(1000));
 
